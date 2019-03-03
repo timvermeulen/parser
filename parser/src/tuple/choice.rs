@@ -84,10 +84,7 @@ where
     type Output = O;
 
     fn parse_choice_once(self, input: &mut Self::Input) -> Option<Self::Output> {
-        match self.0.parse_once_and_check_consumed(input) {
-            (None, false) => self.1.parse_once(input),
-            (result, _) => result,
-        }
+        self.0.or(self.1).parse_once(input)
     }
 }
 
@@ -98,10 +95,7 @@ where
     I: Stream,
 {
     fn parse_choice_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
-        match self.0.parse_mut_and_check_consumed(input) {
-            (None, false) => self.1.parse_mut(input),
-            (result, _) => result,
-        }
+        self.0.by_mut_ref().or(&mut self.1).parse_mut(input)
     }
 }
 
@@ -112,10 +106,7 @@ where
     I: Stream,
 {
     fn parse_choice(&self, input: &mut Self::Input) -> Option<Self::Output> {
-        match self.0.parse_and_check_consumed(input) {
-            (None, false) => self.1.parse(input),
-            (result, _) => result,
-        }
+        self.0.by_ref().or(&self.1).parse(input)
     }
 }
 
@@ -130,7 +121,7 @@ where
     type Output = O;
 
     fn parse_choice_once(self, input: &mut Self::Input) -> Option<Self::Output> {
-        choice((self.0, choice((self.1, self.2)))).parse_once(input)
+        self.0.or(choice((self.1, self.2))).parse_once(input)
     }
 }
 
@@ -142,7 +133,10 @@ where
     I: Stream,
 {
     fn parse_choice_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
-        choice((&mut self.0, choice((&mut self.1, &mut self.2)))).parse_mut(input)
+        self.0
+            .by_mut_ref()
+            .or(choice((&mut self.1, &mut self.2)))
+            .parse_mut(input)
     }
 }
 
@@ -154,7 +148,7 @@ where
     I: Stream,
 {
     fn parse_choice(&self, input: &mut Self::Input) -> Option<Self::Output> {
-        choice((&self.0, choice((&self.1, &self.2)))).parse(input)
+        self.0.by_ref().or(choice((&self.1, &self.2))).parse(input)
     }
 }
 
@@ -170,7 +164,9 @@ where
     type Output = O;
 
     fn parse_choice_once(self, input: &mut Self::Input) -> Option<Self::Output> {
-        choice((self.0, choice((self.1, self.2, self.3)))).parse_once(input)
+        self.0
+            .or(choice((self.1, self.2, self.3)))
+            .parse_once(input)
     }
 }
 
@@ -183,7 +179,10 @@ where
     I: Stream,
 {
     fn parse_choice_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
-        choice((&mut self.0, choice((&mut self.1, &mut self.2, &mut self.3)))).parse_mut(input)
+        self.0
+            .by_mut_ref()
+            .or(choice((&mut self.1, &mut self.2, &mut self.3)))
+            .parse_mut(input)
     }
 }
 
@@ -196,7 +195,10 @@ where
     I: Stream,
 {
     fn parse_choice(&self, input: &mut Self::Input) -> Option<Self::Output> {
-        choice((&self.0, choice((&self.1, &self.2, &self.3)))).parse(input)
+        self.0
+            .by_ref()
+            .or(choice((&self.1, &self.2, &self.3)))
+            .parse(input)
     }
 }
 
@@ -213,7 +215,9 @@ where
     type Output = O;
 
     fn parse_choice_once(self, input: &mut Self::Input) -> Option<Self::Output> {
-        choice((self.0, choice((self.1, self.2, self.3, self.4)))).parse_once(input)
+        self.0
+            .or(choice((self.1, self.2, self.3, self.4)))
+            .parse_once(input)
     }
 }
 
@@ -227,11 +231,10 @@ where
     I: Stream,
 {
     fn parse_choice_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
-        choice((
-            &mut self.0,
-            choice((&mut self.1, &mut self.2, &mut self.3, &mut self.4)),
-        ))
-        .parse_mut(input)
+        self.0
+            .by_mut_ref()
+            .or(choice((&mut self.1, &mut self.2, &mut self.3, &mut self.4)))
+            .parse_mut(input)
     }
 }
 
@@ -245,6 +248,9 @@ where
     I: Stream,
 {
     fn parse_choice(&self, input: &mut Self::Input) -> Option<Self::Output> {
-        choice((&self.0, choice((&self.1, &self.2, &self.3, &self.4)))).parse(input)
+        self.0
+            .by_ref()
+            .or(choice((&self.1, &self.2, &self.3, &self.4)))
+            .parse(input)
     }
 }

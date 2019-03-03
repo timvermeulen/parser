@@ -2,11 +2,13 @@ mod and_then;
 mod attempt;
 mod between;
 mod flat_map;
+mod followed_by;
 mod from_fn;
 mod from_str;
 mod map;
 mod num;
 mod optional;
+mod or;
 mod recognize;
 mod satisfy;
 mod satisfy_map;
@@ -40,7 +42,9 @@ pub trait ParserOnce: Sized {
     }
 
     fn parse_to_end(self, input: Self::Input) -> Option<Self::Output> {
-        chain((self, eof())).map_once(|(o, _)| o).parse_partial(input)
+        chain((self, eof()))
+            .map_once(|(o, _)| o)
+            .parse_partial(input)
     }
 
     fn map_once<F, O>(self, f: F) -> map::Map<Self, F>
@@ -90,6 +94,20 @@ pub trait ParserOnce: Sized {
         R: Parser<Input = Self::Input>,
     {
         between::between(self, left, right)
+    }
+
+    fn or<P>(self, parser: P) -> or::Or<Self, P>
+    where
+        P: ParserOnce<Input = Self::Input, Output = Self::Output>,
+    {
+        or::or(self, parser)
+    }
+
+    fn followed_by<P>(self, parser: P) -> followed_by::FollowedBy<Self, P>
+    where
+        P: ParserOnce<Input = Self::Input>,
+    {
+        followed_by::followed_by(self, parser)
     }
 }
 
