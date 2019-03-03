@@ -35,6 +35,14 @@ pub trait ParserOnce: Sized {
         (output, input.position() != position)
     }
 
+    fn parse_partial(self, mut input: Self::Input) -> Option<Self::Output> {
+        self.parse_once(&mut input)
+    }
+
+    fn parse_to_end(self, input: Self::Input) -> Option<Self::Output> {
+        chain((self, eof())).map_once(|(o, _)| o).parse_partial(input)
+    }
+
     fn map_once<F, O>(self, f: F) -> map::Map<Self, F>
     where
         F: FnOnce(Self::Output) -> O,
@@ -201,14 +209,6 @@ pub trait Parser: ParserMut {
         let position = input.position();
         let output = self.parse(input);
         (output, input.position() != position)
-    }
-
-    fn parse_partial(&self, mut input: Self::Input) -> Option<Self::Output> {
-        self.parse(&mut input)
-    }
-
-    fn parse_to_end(&self, input: Self::Input) -> Option<Self::Output> {
-        chain((self, eof())).map(|(o, _)| o).parse_partial(input)
     }
 
     fn map<F, O>(self, f: F) -> map::Map<Self, F>
