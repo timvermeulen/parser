@@ -42,30 +42,21 @@ pub trait ParserOnce: Sized {
     }
 
     fn parse_to_end(self, input: Self::Input) -> Option<Self::Output> {
-        chain((self, eof()))
-            .map_once(|(o, _)| o)
-            .parse_partial(input)
+        chain((self, eof())).map(|(o, _)| o).parse_partial(input)
     }
 
-    fn map_once<F, O>(self, f: F) -> map::Map<Self, F>
-    where
-        F: FnOnce(Self::Output) -> O,
-    {
+    // TODO: require `F: FnOnce(Self::Output) -> O`
+    fn map<F>(self, f: F) -> map::Map<Self, F> {
         map::map(self, f)
     }
 
-    fn flat_map_once<P, F>(self, f: F) -> flat_map::FlatMap<Self, F>
-    where
-        P: ParserOnce<Input = Self::Input>,
-        F: FnOnce(Self::Output) -> P,
-    {
+    // TODO: require `P: ParserOnce<Input = Self::Input>` and `F: FnOnce(Self::Output) -> P`
+    fn flat_map<F>(self, f: F) -> flat_map::FlatMap<Self, F> {
         flat_map::flat_map(self, f)
     }
 
-    fn and_then_once<F, O>(self, f: F) -> and_then::AndThen<Self, F>
-    where
-        F: FnOnce(Self::Output) -> Option<O>,
-    {
+    // TODO: require `F: FnOnce(Self::Output) -> Option<O>`
+    fn and_then<F>(self, f: F) -> and_then::AndThen<Self, F> {
         and_then::and_then(self, f)
     }
 
@@ -121,28 +112,6 @@ pub trait ParserMut: ParserOnce {
         let position = input.position();
         let output = self.parse_mut(input);
         (output, input.position() != position)
-    }
-
-    fn map_mut<F, O>(self, f: F) -> map::Map<Self, F>
-    where
-        F: FnMut(Self::Output) -> O,
-    {
-        map::map(self, f)
-    }
-
-    fn flat_map_mut<P, F>(self, f: F) -> flat_map::FlatMap<Self, F>
-    where
-        P: ParserOnce<Input = Self::Input>,
-        F: FnMut(Self::Output) -> P,
-    {
-        flat_map::flat_map(self, f)
-    }
-
-    fn and_then_mut<F, O>(self, f: F) -> and_then::AndThen<Self, F>
-    where
-        F: FnMut(Self::Output) -> Option<O>,
-    {
-        and_then::and_then(self, f)
     }
 
     fn many_mut<F, O>(self, f: F) -> many::ManyMut<Self, F>
@@ -227,28 +196,6 @@ pub trait Parser: ParserMut {
         let position = input.position();
         let output = self.parse(input);
         (output, input.position() != position)
-    }
-
-    fn map<F, O>(self, f: F) -> map::Map<Self, F>
-    where
-        F: Fn(Self::Output) -> O,
-    {
-        map::map(self, f)
-    }
-
-    fn flat_map<P, F>(self, f: F) -> flat_map::FlatMap<Self, F>
-    where
-        P: ParserOnce<Input = Self::Input>,
-        F: Fn(Self::Output) -> P,
-    {
-        flat_map::flat_map(self, f)
-    }
-
-    fn and_then<F, O>(self, f: F) -> and_then::AndThen<Self, F>
-    where
-        F: Fn(Self::Output) -> Option<O>,
-    {
-        and_then::and_then(self, f)
     }
 
     fn many<F, O>(self, f: F) -> many::Many<Self, F>
