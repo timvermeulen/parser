@@ -18,7 +18,7 @@ where
 
     fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
         chain((self.left, self.parser, self.right))
-            .map_once(|(_, output, _)| output)
+            .map(|(_, output, _)| output)
             .parse_once(input)
     }
 }
@@ -31,7 +31,7 @@ where
 {
     fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
         chain((&mut self.left, &mut self.parser, &mut self.right))
-            .map_mut(|(_, output, _)| output)
+            .map(|(_, output, _)| output)
             .parse_mut(input)
     }
 }

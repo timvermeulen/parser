@@ -22,7 +22,7 @@ where
         } else {
             chain((&mut self.separator, &mut self.parser))
                 .attempt()
-                .map_mut(|(_, o)| o)
+                .map(|(_, o)| o)
                 .parse_mut(self.input.borrow_mut())
         }
     }

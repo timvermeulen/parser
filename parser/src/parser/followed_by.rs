@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Copy, Clone)]
 pub struct FollowedBy<P, Q>(P, Q);
 
 impl<P, Q> ParserOnce for FollowedBy<P, Q>

@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Copy, Clone)]
 pub struct Or<P, Q>(P, Q);
 
 impl<P, Q> ParserOnce for Or<P, Q>
