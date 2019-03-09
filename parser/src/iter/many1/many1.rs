@@ -2,7 +2,7 @@ use super::*;
 use std::ops::Try;
 
 pub struct Iter<P, I, O> {
-    parser: P,
+    parser: *mut P,
     input: I,
     first: Option<O>,
 }
@@ -16,7 +16,7 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         self.first
             .take()
-            .or_else(|| self.parser.parse_mut(self.input))
+            .or_else(|| unsafe { (*self.parser).parse_mut(self.input) })
     }
 
     fn try_fold<B, F, R>(&mut self, mut state: B, mut f: F) -> R
@@ -28,53 +28,12 @@ where
             state = f(state, first)?;
         }
 
-        while let Some(output) = self.parser.parse_mut(self.input) {
+        while let Some(output) = unsafe { (*self.parser).parse_mut(self.input) } {
             state = f(state, output)?
         }
 
         Try::from_ok(state)
     }
-}
-
-#[derive(Copy, Clone)]
-pub struct Many1Mut<P, F> {
-    parser: P,
-    f: F,
-}
-
-impl<P, F, O> ParserOnce for Many1Mut<P, F>
-where
-    P: ParserMut,
-    F: FnMut(&mut Iter<&mut P, &mut P::Input, P::Output>) -> Option<O>,
-{
-    type Input = P::Input;
-    type Output = O;
-
-    fn parse_once(mut self, input: &mut Self::Input) -> Option<Self::Output> {
-        self.parse_mut(input)
-    }
-}
-
-impl<P, F, O> ParserMut for Many1Mut<P, F>
-where
-    P: ParserMut,
-    F: FnMut(&mut Iter<&mut P, &mut P::Input, P::Output>) -> Option<O>,
-{
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
-        let first = self.parser.parse_mut(input)?;
-
-        let mut iter = Iter {
-            parser: &mut self.parser,
-            input,
-            first: Some(first),
-        };
-
-        (self.f)(&mut iter)
-    }
-}
-
-pub fn many1_mut<P, F>(parser: P, f: F) -> Many1Mut<P, F> {
-    Many1Mut { parser, f }
 }
 
 #[derive(Copy, Clone)]
@@ -86,7 +45,7 @@ pub struct Many1<P, F> {
 impl<P, F, O> ParserOnce for Many1<P, F>
 where
     P: ParserMut,
-    F: FnMut(&mut Iter<&P, &mut P::Input, P::Output>) -> Option<O>,
+    F: FnMut(&mut Iter<P, &mut P::Input, P::Output>) -> Option<O>,
 {
     type Input = P::Input;
     type Output = O;
@@ -99,13 +58,13 @@ where
 impl<P, F, O> ParserMut for Many1<P, F>
 where
     P: ParserMut,
-    F: FnMut(&mut Iter<&P, &mut P::Input, P::Output>) -> Option<O>,
+    F: FnMut(&mut Iter<P, &mut P::Input, P::Output>) -> Option<O>,
 {
     fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
         let first = self.parser.parse_mut(input)?;
 
         let mut iter = Iter {
-            parser: &self.parser,
+            parser: &mut self.parser as *mut P,
             input,
             first: Some(first),
         };
@@ -117,13 +76,13 @@ where
 impl<P, F, O> Parser for Many1<P, F>
 where
     P: Parser,
-    F: Fn(&mut Iter<&P, &mut P::Input, P::Output>) -> Option<O>,
+    F: Fn(&mut Iter<P, &mut P::Input, P::Output>) -> Option<O>,
 {
     fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
         let first = self.parser.parse(input)?;
 
         let mut iter = Iter {
-            parser: &self.parser,
+            parser: &self.parser as *const P as *mut P,
             input,
             first: Some(first),
         };
