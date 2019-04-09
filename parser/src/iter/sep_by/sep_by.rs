@@ -7,23 +7,23 @@ pub struct Iter<P, Q, I> {
     input: I,
 }
 
-impl<P, Q, I> Iterator for Iter<P, Q, I>
+impl<P, Q, I> Iterator for Iter<P, Q, &mut I>
 where
-    P: ParserMut,
-    Q: ParserMut<Input = P::Input>,
-    I: BorrowMut<P::Input>,
+    P: ParserMut<I>,
+    Q: ParserMut<I>,
+    I: Stream,
 {
     type Item = P::Output;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.start {
             self.start = false;
-            unsafe { (*self.parser).parse_mut(self.input.borrow_mut()) }
+            unsafe { (*self.parser).parse_mut(&mut self.input) }
         } else {
             unsafe { (&mut *self.separator).followed_by(&mut *self.parser) }
                 .attempt()
                 .map(|(_, o)| o)
-                .parse_mut(self.input.borrow_mut())
+                .parse_mut(&mut self.input)
         }
     }
 
@@ -37,27 +37,28 @@ pub struct SepBy<P, Q, F> {
     f: F,
 }
 
-impl<P, Q, F, O> ParserOnce for SepBy<P, Q, F>
+impl<P, Q, F, I, O> ParserOnce<I> for SepBy<P, Q, F>
 where
-    P: ParserMut,
-    Q: ParserMut<Input = P::Input>,
-    F: FnMut(&mut Iter<P, Q, &mut P::Input>) -> Option<O>,
+    P: ParserMut<I>,
+    Q: ParserMut<I>,
+    F: FnMut(&mut Iter<P, Q, &mut I>) -> Option<O>,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = O;
 
-    fn parse_once(mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(mut self, input: &mut I) -> Option<Self::Output> {
         self.parse_mut(input)
     }
 }
 
-impl<P, Q, F, O> ParserMut for SepBy<P, Q, F>
+impl<P, Q, F, I, O> ParserMut<I> for SepBy<P, Q, F>
 where
-    P: ParserMut,
-    Q: ParserMut<Input = P::Input>,
-    F: FnMut(&mut Iter<P, Q, &mut P::Input>) -> Option<O>,
+    P: ParserMut<I>,
+    Q: ParserMut<I>,
+    F: FnMut(&mut Iter<P, Q, &mut I>) -> Option<O>,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         (self.f)(&mut Iter {
             parser: &mut self.parser as *mut P,
             separator: &mut self.separator as *mut Q,
@@ -67,13 +68,14 @@ where
     }
 }
 
-impl<P, Q, F, O> Parser for SepBy<P, Q, F>
+impl<P, Q, F, I, O> Parser<I> for SepBy<P, Q, F>
 where
-    P: Parser,
-    Q: Parser<Input = P::Input>,
-    F: Fn(&mut Iter<P, Q, &mut P::Input>) -> Option<O>,
+    P: Parser<I>,
+    Q: Parser<I>,
+    F: Fn(&mut Iter<P, Q, &mut I>) -> Option<O>,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         let mut iter = Iter {
             parser: &self.parser as *const P as *mut P,
             separator: &self.separator as *const Q as *mut Q,

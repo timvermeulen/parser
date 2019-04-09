@@ -6,35 +6,37 @@ pub struct Map<P, F> {
     f: F,
 }
 
-impl<P, F, O> ParserOnce for Map<P, F>
+impl<P, F, I, O> ParserOnce<I> for Map<P, F>
 where
-    P: ParserOnce,
+    P: ParserOnce<I>,
     F: FnOnce(P::Output) -> O,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = O;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse_once(input).map(self.f)
     }
 }
 
-impl<P, F, O> ParserMut for Map<P, F>
+impl<P, F, I, O> ParserMut<I> for Map<P, F>
 where
-    P: ParserMut,
+    P: ParserMut<I>,
     F: FnMut(P::Output) -> O,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse_mut(input).map(&mut self.f)
     }
 }
 
-impl<P, F, O> Parser for Map<P, F>
+impl<P, F, I, O> Parser<I> for Map<P, F>
 where
-    P: Parser,
+    P: Parser<I>,
     F: Fn(P::Output) -> O,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse(input).map(&self.f)
     }
 }

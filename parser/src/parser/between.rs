@@ -7,42 +7,44 @@ pub struct Between<P, L, R> {
     right: R,
 }
 
-impl<P, L, R> ParserOnce for Between<P, L, R>
+impl<P, L, R, I> ParserOnce<I> for Between<P, L, R>
 where
-    P: ParserOnce,
-    L: ParserOnce<Input = P::Input>,
-    R: ParserOnce<Input = P::Input>,
+    P: ParserOnce<I>,
+    L: ParserOnce<I>,
+    R: ParserOnce<I>,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = P::Output;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         chain((self.left, self.parser, self.right))
             .map(|(_, output, _)| output)
             .parse_once(input)
     }
 }
 
-impl<P, L, R> ParserMut for Between<P, L, R>
+impl<P, L, R, I> ParserMut<I> for Between<P, L, R>
 where
-    P: ParserMut,
-    L: ParserMut<Input = P::Input>,
-    R: ParserMut<Input = P::Input>,
+    P: ParserMut<I>,
+    L: ParserMut<I>,
+    R: ParserMut<I>,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         chain((&mut self.left, &mut self.parser, &mut self.right))
             .map(|(_, output, _)| output)
             .parse_mut(input)
     }
 }
 
-impl<P, L, R> Parser for Between<P, L, R>
+impl<P, L, R, I> Parser<I> for Between<P, L, R>
 where
-    P: Parser,
-    L: Parser<Input = P::Input>,
-    R: Parser<Input = P::Input>,
+    P: Parser<I>,
+    L: Parser<I>,
+    R: Parser<I>,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         chain((&self.left, &self.parser, &self.right))
             .map(|(_, output, _)| output)
             .parse(input)

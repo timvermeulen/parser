@@ -6,16 +6,16 @@ pub struct FlatMap<P, F> {
     f: F,
 }
 
-impl<P, Q, F> ParserOnce for FlatMap<P, F>
+impl<P, Q, F, I> ParserOnce<I> for FlatMap<P, F>
 where
-    P: ParserOnce,
-    Q: ParserOnce<Input = P::Input>,
+    P: ParserOnce<I>,
+    Q: ParserOnce<I>,
     F: FnOnce(P::Output) -> Q,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = Q::Output;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         let f = self.f;
         self.parser
             .parse_once(input)
@@ -23,26 +23,28 @@ where
     }
 }
 
-impl<P, Q, F> ParserMut for FlatMap<P, F>
+impl<P, Q, F, I> ParserMut<I> for FlatMap<P, F>
 where
-    P: ParserMut,
-    Q: ParserOnce<Input = P::Input>,
+    P: ParserMut<I>,
+    Q: ParserOnce<I>,
     F: FnMut(P::Output) -> Q,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parser
             .parse_mut(input)
             .and_then(|o| (self.f)(o).parse_once(input))
     }
 }
 
-impl<P, Q, F> Parser for FlatMap<P, F>
+impl<P, Q, F, I> Parser<I> for FlatMap<P, F>
 where
-    P: Parser,
-    Q: ParserOnce<Input = P::Input>,
+    P: Parser<I>,
+    Q: ParserOnce<I>,
     F: Fn(P::Output) -> Q,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.parser
             .parse(input)
             .and_then(|o| (self.f)(o).parse_once(input))

@@ -19,43 +19,42 @@ where
     }
 }
 
-impl<F, I, O> ParserOnce for SatisfyMap<F, I, O>
+impl<F, I, O> ParserOnce<I> for SatisfyMap<F, I, O>
 where
-    I: Stream,
     F: FnOnce(I::Item) -> Option<O>,
+    I: Stream,
 {
-    type Input = I;
     type Output = O;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         input.uncons_map(self.f)
     }
 }
 
-impl<F, I, O> ParserMut for SatisfyMap<F, I, O>
+impl<F, I, O> ParserMut<I> for SatisfyMap<F, I, O>
 where
-    I: Stream,
     F: FnMut(I::Item) -> Option<O>,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         input.uncons_map(&mut self.f)
     }
 }
 
-impl<F, I, O> Parser for SatisfyMap<F, I, O>
+impl<F, I, O> Parser<I> for SatisfyMap<F, I, O>
 where
-    I: Stream,
     F: Fn(I::Item) -> Option<O>,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         input.uncons_map(&self.f)
     }
 }
 
 pub fn satisfy_map_once<F, I, O>(f: F) -> SatisfyMap<F, I, O>
 where
-    I: Stream,
     F: FnOnce(I::Item) -> Option<O>,
+    I: Stream,
 {
     SatisfyMap {
         f,
@@ -65,8 +64,8 @@ where
 
 pub fn satisfy_map_mut<F, I, O>(f: F) -> SatisfyMap<F, I, O>
 where
-    I: Stream,
     F: FnMut(I::Item) -> Option<O>,
+    I: Stream,
 {
     SatisfyMap {
         f,
@@ -76,8 +75,8 @@ where
 
 pub fn satisfy_map<F, I, O>(f: F) -> SatisfyMap<F, I, O>
 where
-    I: Stream,
     F: Fn(I::Item) -> Option<O>,
+    I: Stream,
 {
     SatisfyMap {
         f,

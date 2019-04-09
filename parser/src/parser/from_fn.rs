@@ -1,86 +1,72 @@
 use super::*;
 
-pub struct FromFn<F, I> {
+pub struct FromFn<F> {
     f: F,
-    _marker: PhantomData<I>,
 }
 
-impl<F, I> Copy for FromFn<F, I> where F: Copy {}
+impl<F> Copy for FromFn<F> where F: Copy {}
 
-impl<F, I> Clone for FromFn<F, I>
+impl<F> Clone for FromFn<F>
 where
     F: Clone,
 {
     fn clone(&self) -> Self {
-        FromFn {
-            f: self.f.clone(),
-            _marker: PhantomData,
-        }
+        FromFn { f: self.f.clone() }
     }
 }
 
-impl<F, I, O> ParserOnce for FromFn<F, I>
+impl<F, I, O> ParserOnce<I> for FromFn<F>
 where
     F: FnOnce(&mut I) -> Option<O>,
     I: Stream,
 {
-    type Input = I;
     type Output = O;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         (self.f)(input)
     }
 }
 
-impl<F, I, O> ParserMut for FromFn<F, I>
+impl<F, I, O> ParserMut<I> for FromFn<F>
 where
     F: FnMut(&mut I) -> Option<O>,
     I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         (self.f)(input)
     }
 }
 
-impl<F, I, O> Parser for FromFn<F, I>
+impl<F, I, O> Parser<I> for FromFn<F>
 where
     F: Fn(&mut I) -> Option<O>,
     I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         (self.f)(input)
     }
 }
 
-pub fn from_fn_once<F, I, O>(f: F) -> FromFn<F, I>
+pub fn from_fn_once<F, I, O>(f: F) -> FromFn<F>
 where
     F: FnOnce(&mut I) -> Option<O>,
     I: Stream,
 {
-    FromFn {
-        f,
-        _marker: PhantomData,
-    }
+    FromFn { f }
 }
 
-pub fn from_fn_mut<F, I, O>(f: F) -> FromFn<F, I>
+pub fn from_fn_mut<F, I, O>(f: F) -> FromFn<F>
 where
     F: FnMut(&mut I) -> Option<O>,
     I: Stream,
 {
-    FromFn {
-        f,
-        _marker: PhantomData,
-    }
+    FromFn { f }
 }
 
-pub fn from_fn<F, I, O>(f: F) -> FromFn<F, I>
+pub fn from_fn<F, I, O>(f: F) -> FromFn<F>
 where
     F: Fn(&mut I) -> Option<O>,
     I: Stream,
 {
-    FromFn {
-        f,
-        _marker: PhantomData,
-    }
+    FromFn { f }
 }

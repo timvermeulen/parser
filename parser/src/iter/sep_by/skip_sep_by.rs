@@ -6,25 +6,26 @@ pub struct SkipSepBy<P, Q> {
     separator: Q,
 }
 
-impl<P, Q> ParserOnce for SkipSepBy<P, Q>
+impl<P, Q, I> ParserOnce<I> for SkipSepBy<P, Q>
 where
-    P: ParserMut,
-    Q: ParserMut<Input = P::Input>,
+    P: ParserMut<I>,
+    Q: ParserMut<I>,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = ();
 
-    fn parse_once(mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(mut self, input: &mut I) -> Option<Self::Output> {
         self.parse_mut(input)
     }
 }
 
-impl<P, Q> ParserMut for SkipSepBy<P, Q>
+impl<P, Q, I> ParserMut<I> for SkipSepBy<P, Q>
 where
-    P: ParserMut,
-    Q: ParserMut<Input = P::Input>,
+    P: ParserMut<I>,
+    Q: ParserMut<I>,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parser
             .by_mut_ref()
             .sep_by_mut(&mut self.separator, |iter| {
@@ -35,12 +36,13 @@ where
     }
 }
 
-impl<P, Q> Parser for SkipSepBy<P, Q>
+impl<P, Q, I> Parser<I> for SkipSepBy<P, Q>
 where
-    P: Parser,
-    Q: Parser<Input = P::Input>,
+    P: Parser<I>,
+    Q: Parser<I>,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.parser
             .by_ref()
             .sep_by(&self.separator, |iter| {

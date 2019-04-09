@@ -1,28 +1,27 @@
 use super::*;
 
-pub trait ChainParserOnce {
-    type Input: Stream;
+pub trait ChainParserOnce<Input: Stream> {
     type Output;
 
-    fn parse_chain_once(self, input: &mut Self::Input) -> Option<Self::Output>;
+    fn parse_chain_once(self, input: &mut Input) -> Option<Self::Output>;
 }
 
-pub trait ChainParserMut: ChainParserOnce {
-    fn parse_chain_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output>;
+pub trait ChainParserMut<Input: Stream>: ChainParserOnce<Input> {
+    fn parse_chain_mut(&mut self, input: &mut Input) -> Option<Self::Output>;
 }
 
-pub trait ChainParser: ChainParserMut {
-    fn parse_chain(&self, input: &mut Self::Input) -> Option<Self::Output>;
+pub trait ChainParser<Input: Stream>: ChainParserMut<Input> {
+    fn parse_chain(&self, input: &mut Input) -> Option<Self::Output>;
 }
 
-pub struct Chain<P, I, O> {
+pub struct Chain<P, O> {
     parser: P,
-    _marker: PhantomData<(I, O)>,
+    _marker: PhantomData<O>,
 }
 
-impl<P, I, O> Copy for Chain<P, I, O> where P: Copy {}
+impl<P, O> Copy for Chain<P, O> where P: Copy {}
 
-impl<P, I, O> Clone for Chain<P, I, O>
+impl<P, O> Clone for Chain<P, O>
 where
     P: Clone,
 {
@@ -34,41 +33,42 @@ where
     }
 }
 
-impl<P, I, O> ParserOnce for Chain<P, I, O>
+impl<P, I, O> ParserOnce<I> for Chain<P, O>
 where
-    P: ChainParserOnce<Input = I, Output = O>,
+    P: ChainParserOnce<I, Output = O>,
     I: Stream,
 {
-    type Input = I;
     type Output = O;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse_chain_once(input)
     }
 }
 
-impl<P, I, O> ParserMut for Chain<P, I, O>
+impl<P, I, O> ParserMut<I> for Chain<P, O>
 where
-    P: ChainParserMut<Input = I, Output = O>,
+    P: ChainParserMut<I, Output = O>,
     I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse_chain_mut(input)
     }
 }
 
-impl<P, O> Parser for Chain<P, P::Input, O>
+impl<P, I, O> Parser<I> for Chain<P, O>
 where
-    P: ChainParser<Output = O>,
+    P: ChainParser<I, Output = O>,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse_chain(input)
     }
 }
 
-pub fn chain<P, O>(parser: P) -> Chain<P, P::Input, O>
+pub fn chain<P, I, O>(parser: P) -> Chain<P, O>
 where
-    P: ChainParserOnce<Output = O>,
+    P: ChainParserOnce<I, Output = O>,
+    I: Stream,
 {
     Chain {
         parser,
@@ -76,27 +76,26 @@ where
     }
 }
 
-impl<P1, P2, I> ChainParserOnce for (P1, P2)
+impl<P1, P2, I> ChainParserOnce<I> for (P1, P2)
 where
-    P1: ParserOnce<Input = I>,
-    P2: ParserOnce<Input = I>,
+    P1: ParserOnce<I>,
+    P2: ParserOnce<I>,
     I: Stream,
 {
-    type Input = I;
     type Output = (P1::Output, P2::Output);
 
-    fn parse_chain_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_chain_once(self, input: &mut I) -> Option<Self::Output> {
         self.0.followed_by(self.1).parse_once(input)
     }
 }
 
-impl<P1, P2, I> ChainParserMut for (P1, P2)
+impl<P1, P2, I> ChainParserMut<I> for (P1, P2)
 where
-    P1: ParserMut<Input = I>,
-    P2: ParserMut<Input = I>,
+    P1: ParserMut<I>,
+    P2: ParserMut<I>,
     I: Stream,
 {
-    fn parse_chain_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_chain_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_mut_ref()
             .followed_by(&mut self.1)
@@ -104,28 +103,27 @@ where
     }
 }
 
-impl<P1, P2, I> ChainParser for (P1, P2)
+impl<P1, P2, I> ChainParser<I> for (P1, P2)
 where
-    P1: Parser<Input = I>,
-    P2: Parser<Input = I>,
+    P1: Parser<I>,
+    P2: Parser<I>,
     I: Stream,
 {
-    fn parse_chain(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_chain(&self, input: &mut I) -> Option<Self::Output> {
         self.0.by_ref().followed_by(&self.1).parse(input)
     }
 }
 
-impl<P1, P2, P3, I> ChainParserOnce for (P1, P2, P3)
+impl<P1, P2, P3, I> ChainParserOnce<I> for (P1, P2, P3)
 where
-    P1: ParserOnce<Input = I>,
-    P2: ParserOnce<Input = I>,
-    P3: ParserOnce<Input = I>,
+    P1: ParserOnce<I>,
+    P2: ParserOnce<I>,
+    P3: ParserOnce<I>,
     I: Stream,
 {
-    type Input = I;
     type Output = (P1::Output, P2::Output, P3::Output);
 
-    fn parse_chain_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_chain_once(self, input: &mut I) -> Option<Self::Output> {
         self.0
             .followed_by(chain((self.1, self.2)))
             .map(|(a, (b, c))| (a, b, c))
@@ -133,14 +131,14 @@ where
     }
 }
 
-impl<P1, P2, P3, I> ChainParserMut for (P1, P2, P3)
+impl<P1, P2, P3, I> ChainParserMut<I> for (P1, P2, P3)
 where
-    P1: ParserMut<Input = I>,
-    P2: ParserMut<Input = I>,
-    P3: ParserMut<Input = I>,
+    P1: ParserMut<I>,
+    P2: ParserMut<I>,
+    P3: ParserMut<I>,
     I: Stream,
 {
-    fn parse_chain_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_chain_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_mut_ref()
             .followed_by(chain((&mut self.1, &mut self.2)))
@@ -149,14 +147,14 @@ where
     }
 }
 
-impl<P1, P2, P3, I> ChainParser for (P1, P2, P3)
+impl<P1, P2, P3, I> ChainParser<I> for (P1, P2, P3)
 where
-    P1: Parser<Input = I>,
-    P2: Parser<Input = I>,
-    P3: Parser<Input = I>,
+    P1: Parser<I>,
+    P2: Parser<I>,
+    P3: Parser<I>,
     I: Stream,
 {
-    fn parse_chain(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_chain(&self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_ref()
             .followed_by(chain((&self.1, &self.2)))
@@ -165,18 +163,17 @@ where
     }
 }
 
-impl<P1, P2, P3, P4, I> ChainParserOnce for (P1, P2, P3, P4)
+impl<P1, P2, P3, P4, I> ChainParserOnce<I> for (P1, P2, P3, P4)
 where
-    P1: ParserOnce<Input = I>,
-    P2: ParserOnce<Input = I>,
-    P3: ParserOnce<Input = I>,
-    P4: ParserOnce<Input = I>,
+    P1: ParserOnce<I>,
+    P2: ParserOnce<I>,
+    P3: ParserOnce<I>,
+    P4: ParserOnce<I>,
     I: Stream,
 {
-    type Input = I;
     type Output = (P1::Output, P2::Output, P3::Output, P4::Output);
 
-    fn parse_chain_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_chain_once(self, input: &mut I) -> Option<Self::Output> {
         self.0
             .followed_by(chain((self.1, self.2, self.3)))
             .map(|(a, (b, c, d))| (a, b, c, d))
@@ -184,15 +181,15 @@ where
     }
 }
 
-impl<P1, P2, P3, P4, I> ChainParserMut for (P1, P2, P3, P4)
+impl<P1, P2, P3, P4, I> ChainParserMut<I> for (P1, P2, P3, P4)
 where
-    P1: ParserMut<Input = I>,
-    P2: ParserMut<Input = I>,
-    P3: ParserMut<Input = I>,
-    P4: ParserMut<Input = I>,
+    P1: ParserMut<I>,
+    P2: ParserMut<I>,
+    P3: ParserMut<I>,
+    P4: ParserMut<I>,
     I: Stream,
 {
-    fn parse_chain_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_chain_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_mut_ref()
             .followed_by(chain((&mut self.1, &mut self.2, &mut self.3)))
@@ -201,15 +198,15 @@ where
     }
 }
 
-impl<P1, P2, P3, P4, I> ChainParser for (P1, P2, P3, P4)
+impl<P1, P2, P3, P4, I> ChainParser<I> for (P1, P2, P3, P4)
 where
-    P1: Parser<Input = I>,
-    P2: Parser<Input = I>,
-    P3: Parser<Input = I>,
-    P4: Parser<Input = I>,
+    P1: Parser<I>,
+    P2: Parser<I>,
+    P3: Parser<I>,
+    P4: Parser<I>,
     I: Stream,
 {
-    fn parse_chain(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_chain(&self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_ref()
             .followed_by(chain((&self.1, &self.2, &self.3)))
@@ -218,20 +215,19 @@ where
     }
 }
 
-impl<P1, P2, P3, P4, P5, I> ChainParserOnce for (P1, P2, P3, P4, P5)
+impl<P1, P2, P3, P4, P5, I> ChainParserOnce<I> for (P1, P2, P3, P4, P5)
 where
-    P1: ParserOnce<Input = I>,
-    P2: ParserOnce<Input = I>,
-    P3: ParserOnce<Input = I>,
-    P4: ParserOnce<Input = I>,
-    P5: ParserOnce<Input = I>,
+    P1: ParserOnce<I>,
+    P2: ParserOnce<I>,
+    P3: ParserOnce<I>,
+    P4: ParserOnce<I>,
+    P5: ParserOnce<I>,
     I: Stream,
 {
-    type Input = I;
     #[allow(clippy::type_complexity)]
     type Output = (P1::Output, P2::Output, P3::Output, P4::Output, P5::Output);
 
-    fn parse_chain_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_chain_once(self, input: &mut I) -> Option<Self::Output> {
         self.0
             .followed_by(chain((self.1, self.2, self.3, self.4)))
             .map(|(a, (b, c, d, e))| (a, b, c, d, e))
@@ -239,16 +235,16 @@ where
     }
 }
 
-impl<P1, P2, P3, P4, P5, I> ChainParserMut for (P1, P2, P3, P4, P5)
+impl<P1, P2, P3, P4, P5, I> ChainParserMut<I> for (P1, P2, P3, P4, P5)
 where
-    P1: ParserMut<Input = I>,
-    P2: ParserMut<Input = I>,
-    P3: ParserMut<Input = I>,
-    P4: ParserMut<Input = I>,
-    P5: ParserMut<Input = I>,
+    P1: ParserMut<I>,
+    P2: ParserMut<I>,
+    P3: ParserMut<I>,
+    P4: ParserMut<I>,
+    P5: ParserMut<I>,
     I: Stream,
 {
-    fn parse_chain_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_chain_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_mut_ref()
             .followed_by(chain((&mut self.1, &mut self.2, &mut self.3, &mut self.4)))
@@ -257,16 +253,16 @@ where
     }
 }
 
-impl<P1, P2, P3, P4, P5, I> ChainParser for (P1, P2, P3, P4, P5)
+impl<P1, P2, P3, P4, P5, I> ChainParser<I> for (P1, P2, P3, P4, P5)
 where
-    P1: Parser<Input = I>,
-    P2: Parser<Input = I>,
-    P3: Parser<Input = I>,
-    P4: Parser<Input = I>,
-    P5: Parser<Input = I>,
+    P1: Parser<I>,
+    P2: Parser<I>,
+    P3: Parser<I>,
+    P4: Parser<I>,
+    P5: Parser<I>,
     I: Stream,
 {
-    fn parse_chain(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_chain(&self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_ref()
             .followed_by(chain((&self.1, &self.2, &self.3, &self.4)))

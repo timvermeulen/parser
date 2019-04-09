@@ -19,43 +19,42 @@ where
     }
 }
 
-impl<F, I> ParserOnce for Satisfy<F, I>
+impl<F, I> ParserOnce<I> for Satisfy<F, I>
 where
     I: Stream,
     F: FnOnce(I::Item) -> bool,
 {
-    type Input = I;
     type Output = I::Item;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         satisfy_map_once(move |x| if (self.f)(x) { Some(x) } else { None }).parse_once(input)
     }
 }
 
-impl<F, I> ParserMut for Satisfy<F, I>
+impl<F, I> ParserMut<I> for Satisfy<F, I>
 where
     I: Stream,
     F: FnMut(I::Item) -> bool,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         satisfy_map_mut(move |x| if (self.f)(x) { Some(x) } else { None }).parse_mut(input)
     }
 }
 
-impl<F, I> Parser for Satisfy<F, I>
+impl<F, I> Parser<I> for Satisfy<F, I>
 where
     I: Stream,
     F: Fn(I::Item) -> bool,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         satisfy_map(move |x| if (self.f)(x) { Some(x) } else { None }).parse(input)
     }
 }
 
 pub fn satisfy<F, I>(f: F) -> Satisfy<F, I>
 where
-    I: Stream,
     F: Fn(I::Item) -> bool,
+    I: Stream,
 {
     Satisfy {
         f,

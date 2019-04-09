@@ -13,7 +13,6 @@ pub use parser_macros::opaque;
 pub use stream::Stream;
 pub use tuple::{chain, choice};
 
-use std::borrow::BorrowMut;
 use std::iter::FromIterator;
 use std::marker::{PhantomData, Sized};
 
@@ -34,15 +33,11 @@ mod tests {
     use super::*;
     use std::fmt::Debug;
 
-    fn assert_parse<P>(
-        parser: P,
-        mut input: P::Input,
-        output: Option<P::Output>,
-        remainder: P::Input,
-    ) where
-        P: Parser,
-        P::Input: Debug + PartialEq,
+    fn assert_parse<P, I>(parser: P, mut input: I, output: Option<P::Output>, remainder: I)
+    where
+        P: Parser<I>,
         P::Output: Debug + PartialEq,
+        I: Stream + Debug + PartialEq,
     {
         assert_eq!(parser.parse(&mut input), output);
         assert_eq!(input, remainder);
@@ -135,7 +130,7 @@ mod tests {
         }
 
         #[opaque]
-        fn json<'a>() -> impl Parser<Input = &'a str, Output = JSON> {
+        fn json<'a>() -> impl Parser<&'a str, Output = JSON> {
             choice((
                 parser::i32().map(JSON::Number),
                 string().map(JSON::String),
@@ -145,7 +140,7 @@ mod tests {
         }
 
         #[allow(unused)]
-        fn string<'a>() -> impl Parser<Input = &'a str, Output = String> {
+        fn string<'a>() -> impl Parser<&'a str, Output = String> {
             satisfy(char::is_alphabetic)
                 .skip_many1()
                 .recognize()
@@ -154,14 +149,14 @@ mod tests {
         }
 
         #[allow(unused)]
-        fn array<'a>() -> impl Parser<Input = &'a str, Output = Vec<JSON>> {
+        fn array<'a>() -> impl Parser<&'a str, Output = Vec<JSON>> {
             json()
                 .collect_sep_by(token(','))
                 .between(token('['), token(']'))
         }
 
         #[allow(unused)]
-        fn object<'a>() -> impl Parser<Input = &'a str, Output = Vec<(String, JSON)>> {
+        fn object<'a>() -> impl Parser<&'a str, Output = Vec<(String, JSON)>> {
             chain((string(), token(':'), json()))
                 .map(|(key, _, value)| (key, value))
                 .collect_sep_by(token(','))

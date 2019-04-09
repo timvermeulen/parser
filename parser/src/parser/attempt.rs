@@ -3,14 +3,14 @@ use super::*;
 #[derive(Copy, Clone)]
 pub struct Attempt<P>(P);
 
-impl<P> ParserOnce for Attempt<P>
+impl<P, I> ParserOnce<I> for Attempt<P>
 where
-    P: ParserOnce,
+    P: ParserOnce<I>,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = P::Output;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         let copy = *input;
         let output = self.0.parse_once(input);
         if output.is_none() {
@@ -20,11 +20,12 @@ where
     }
 }
 
-impl<P> ParserMut for Attempt<P>
+impl<P, I> ParserMut<I> for Attempt<P>
 where
-    P: ParserMut,
+    P: ParserMut<I>,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         let copy = *input;
         let output = self.0.parse_mut(input);
         if output.is_none() {
@@ -34,11 +35,12 @@ where
     }
 }
 
-impl<P> Parser for Attempt<P>
+impl<P, I> Parser<I> for Attempt<P>
 where
-    P: Parser,
+    P: Parser<I>,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         let copy = *input;
         let output = self.0.parse(input);
         if output.is_none() {

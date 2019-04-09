@@ -22,26 +22,22 @@ pub use satisfy::satisfy;
 pub use satisfy_map::{satisfy_map, satisfy_map_mut, satisfy_map_once};
 pub use tokens::tokens;
 
-pub trait ParserOnce: Sized {
-    type Input: Stream;
+pub trait ParserOnce<Input: Stream>: Sized {
     type Output;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output>;
+    fn parse_once(self, input: &mut Input) -> Option<Self::Output>;
 
-    fn parse_once_and_check_consumed(
-        self,
-        input: &mut Self::Input,
-    ) -> (Option<Self::Output>, bool) {
+    fn parse_once_and_check_consumed(self, input: &mut Input) -> (Option<Self::Output>, bool) {
         let position = input.position();
         let output = self.parse_once(input);
         (output, input.position() != position)
     }
 
-    fn parse_partial(self, mut input: Self::Input) -> Option<Self::Output> {
+    fn parse_partial(self, mut input: Input) -> Option<Self::Output> {
         self.parse_once(&mut input)
     }
 
-    fn parse_to_end(self, input: Self::Input) -> Option<Self::Output> {
+    fn parse_to_end(self, input: Input) -> Option<Self::Output> {
         chain((self, eof())).map(|(o, _)| o).parse_partial(input)
     }
 
@@ -70,7 +66,7 @@ pub trait ParserOnce: Sized {
 
     fn from_str<'a, O>(self) -> from_str::FromStr<Self, O>
     where
-        Self: ParserOnce<Output = &'a str>,
+        Self: ParserOnce<Input, Output = &'a str>,
     {
         from_str::from_str(self)
     }
@@ -81,34 +77,31 @@ pub trait ParserOnce: Sized {
 
     fn between<L, R>(self, left: L, right: R) -> between::Between<Self, L, R>
     where
-        L: Parser<Input = Self::Input>,
-        R: Parser<Input = Self::Input>,
+        L: Parser<Input>,
+        R: Parser<Input>,
     {
         between::between(self, left, right)
     }
 
     fn or<P>(self, parser: P) -> or::Or<Self, P>
     where
-        P: ParserOnce<Input = Self::Input, Output = Self::Output>,
+        P: ParserOnce<Input, Output = Self::Output>,
     {
         or::or(self, parser)
     }
 
     fn followed_by<P>(self, parser: P) -> followed_by::FollowedBy<Self, P>
     where
-        P: ParserOnce<Input = Self::Input>,
+        P: ParserOnce<Input>,
     {
         followed_by::followed_by(self, parser)
     }
 }
 
-pub trait ParserMut: ParserOnce {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output>;
+pub trait ParserMut<Input: Stream>: ParserOnce<Input> {
+    fn parse_mut(&mut self, input: &mut Input) -> Option<Self::Output>;
 
-    fn parse_mut_and_check_consumed(
-        &mut self,
-        input: &mut Self::Input,
-    ) -> (Option<Self::Output>, bool) {
+    fn parse_mut_and_check_consumed(&mut self, input: &mut Input) -> (Option<Self::Output>, bool) {
         let position = input.position();
         let output = self.parse_mut(input);
         (output, input.position() != position)
@@ -117,12 +110,12 @@ pub trait ParserMut: ParserOnce {
     // TODO: remove in favor of `many`
     fn many_mut<F, O>(self, f: F) -> many::Many<Self, F>
     where
-        F: FnMut(&mut many::Iter<Self, &mut Self::Input>) -> Option<O>,
+        F: FnMut(&mut many::Iter<Self, &mut Input>) -> Option<O>,
     {
         many::many(self, f)
     }
 
-    fn iter_many(self, input: Self::Input) -> many::ManyIter<Self, Self::Input> {
+    fn iter_many(self, input: Input) -> many::ManyIter<Self, Input> {
         many::iter(self, input)
     }
 
@@ -140,7 +133,7 @@ pub trait ParserMut: ParserOnce {
     // TODO: remove in favor of `many1`
     fn many1_mut<F, O>(self, f: F) -> many1::Many1<Self, F>
     where
-        F: FnMut(&mut many1::Iter<Self, &mut Self::Input, Self::Output>) -> Option<O>,
+        F: FnMut(&mut many1::Iter<Self, &mut Input, Self::Output>) -> Option<O>,
     {
         many1::many1(self, f)
     }
@@ -158,33 +151,29 @@ pub trait ParserMut: ParserOnce {
 
     fn sep_by_mut<P, F, O>(self, separator: P, f: F) -> sep_by::SepBy<Self, P, F>
     where
-        P: ParserMut<Input = Self::Input>,
-        F: FnMut(&mut sep_by::Iter<Self, P, &mut Self::Input>) -> Option<O>,
+        P: ParserMut<Input>,
+        F: FnMut(&mut sep_by::Iter<Self, P, &mut Input>) -> Option<O>,
     {
         sep_by::sep_by(self, separator, f)
     }
 
-    fn iter_sep_by<P>(
-        self,
-        separator: P,
-        input: Self::Input,
-    ) -> sep_by::SepByIter<Self, P, Self::Input>
+    fn iter_sep_by<P>(self, separator: P, input: Input) -> sep_by::SepByIter<Self, P, Input>
     where
-        P: Parser<Input = Self::Input>,
+        P: Parser<Input>,
     {
         sep_by::iter(self, separator, input)
     }
 
     fn skip_sep_by<P>(self, separator: P) -> sep_by::SkipSepBy<Self, P>
     where
-        P: Parser<Input = Self::Input>,
+        P: Parser<Input>,
     {
         sep_by::skip_sep_by(self, separator)
     }
 
     fn collect_sep_by<P, I>(self, separator: P) -> sep_by::CollectSepBy<Self, P, I>
     where
-        P: Parser<Input = Self::Input>,
+        P: Parser<Input>,
         I: FromIterator<Self::Output>,
     {
         sep_by::collect_sep_by(self, separator)
@@ -195,10 +184,10 @@ pub trait ParserMut: ParserOnce {
     }
 }
 
-pub trait Parser: ParserMut {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output>;
+pub trait Parser<Input: Stream>: ParserMut<Input> {
+    fn parse(&self, input: &mut Input) -> Option<Self::Output>;
 
-    fn parse_and_check_consumed(&self, input: &mut Self::Input) -> (Option<Self::Output>, bool) {
+    fn parse_and_check_consumed(&self, input: &mut Input) -> (Option<Self::Output>, bool) {
         let position = input.position();
         let output = self.parse(input);
         (output, input.position() != position)
@@ -206,22 +195,22 @@ pub trait Parser: ParserMut {
 
     fn many<F, O>(self, f: F) -> many::Many<Self, F>
     where
-        F: Fn(&mut many::Iter<Self, &mut Self::Input>) -> Option<O>,
+        F: Fn(&mut many::Iter<Self, &mut Input>) -> Option<O>,
     {
         many::many(self, f)
     }
 
     fn many1<F, O>(self, f: F) -> many1::Many1<Self, F>
     where
-        F: Fn(&mut many1::Iter<Self, &mut Self::Input, Self::Output>) -> Option<O>,
+        F: Fn(&mut many1::Iter<Self, &mut Input, Self::Output>) -> Option<O>,
     {
         many1::many1(self, f)
     }
 
     fn sep_by<P, F, O>(self, separator: P, f: F) -> sep_by::SepBy<Self, P, F>
     where
-        P: Parser<Input = Self::Input>,
-        F: Fn(&mut sep_by::Iter<Self, P, &mut Self::Input>) -> Option<O>,
+        P: Parser<Input>,
+        F: Fn(&mut sep_by::Iter<Self, P, &mut Input>) -> Option<O>,
     {
         sep_by::sep_by(self, separator, f)
     }
@@ -231,58 +220,61 @@ pub trait Parser: ParserMut {
     }
 }
 
-impl<P> ParserOnce for &mut P
+impl<P, I> ParserOnce<I> for &mut P
 where
-    P: ParserMut,
+    P: ParserMut<I>,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = P::Output;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         self.parse_mut(input)
     }
 }
 
-impl<P> ParserMut for &mut P
+impl<P, I> ParserMut<I> for &mut P
 where
-    P: ParserMut,
+    P: ParserMut<I>,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         (*self).parse_mut(input)
     }
 }
 
-impl<P> ParserOnce for &P
+impl<P, I> ParserOnce<I> for &P
 where
-    P: Parser,
+    P: Parser<I>,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = P::Output;
 
-    fn parse_once(mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(mut self, input: &mut I) -> Option<Self::Output> {
         self.parse_mut(input)
     }
 }
 
-impl<P> ParserMut for &P
+impl<P, I> ParserMut<I> for &P
 where
-    P: Parser,
+    P: Parser<I>,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parse(input)
     }
 }
 
-impl<P> Parser for &P
+impl<P, I> Parser<I> for &P
 where
-    P: Parser,
+    P: Parser<I>,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         (*self).parse(input)
     }
 }
 
-pub fn token<I>(token: I::Item) -> impl Parser<Input = I, Output = I::Item> + Copy
+pub fn token<I>(token: I::Item) -> impl Parser<I, Output = I::Item> + Copy
 where
     I: Stream,
     I::Item: PartialEq,
@@ -290,7 +282,7 @@ where
     satisfy(move |t| t == token)
 }
 
-pub fn value<I, O>(output: O) -> impl Parser<Input = I, Output = O> + Copy
+pub fn value<I, O>(output: O) -> impl Parser<I, Output = O> + Copy
 where
     I: Stream,
     O: Copy,
@@ -298,14 +290,14 @@ where
     from_fn(move |_| Some(output))
 }
 
-pub fn any<I>() -> impl Parser<Input = I, Output = I::Item> + Copy
+pub fn any<I>() -> impl Parser<I, Output = I::Item> + Copy
 where
     I: Stream,
 {
     satisfy_map(Some)
 }
 
-pub fn eof<I>() -> impl Parser<Input = I, Output = ()> + Copy
+pub fn eof<I>() -> impl Parser<I, Output = ()> + Copy
 where
     I: Stream,
 {
@@ -315,28 +307,27 @@ where
 #[derive(Copy, Clone)]
 struct String<'a>(&'a str);
 
-impl<'a> ParserOnce for String<'a> {
-    type Input = &'a str;
+impl<'a> ParserOnce<&'a str> for String<'a> {
     type Output = ();
 
-    fn parse_once(mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(mut self, input: &mut &'a str) -> Option<Self::Output> {
         self.parse_mut(input)
     }
 }
 
-impl ParserMut for String<'_> {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+impl<'a> ParserMut<&'a str> for String<'a> {
+    fn parse_mut(&mut self, input: &mut &'a str) -> Option<Self::Output> {
         self.parse(input)
     }
 }
 
-impl Parser for String<'_> {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+impl<'a> Parser<&'a str> for String<'a> {
+    fn parse(&self, input: &mut &'a str) -> Option<Self::Output> {
         tokens(self.0.chars()).parse_once(input)
     }
 }
 
-pub fn string(string: &str) -> impl Parser<Input = &str, Output = ()> + Copy {
+pub fn string(string: &str) -> impl Parser<&str, Output = ()> + Copy {
     String(string)
 }
 

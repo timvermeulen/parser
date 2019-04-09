@@ -7,9 +7,10 @@ pub struct Iter<P, I, O> {
     first: Option<O>,
 }
 
-impl<P> Iterator for Iter<P, &mut P::Input, P::Output>
+impl<P, I> Iterator for Iter<P, &mut I, P::Output>
 where
-    P: ParserMut,
+    P: ParserMut<I>,
+    I: Stream,
 {
     type Item = P::Output;
 
@@ -42,25 +43,26 @@ pub struct Many1<P, F> {
     f: F,
 }
 
-impl<P, F, O> ParserOnce for Many1<P, F>
+impl<P, F, I, O> ParserOnce<I> for Many1<P, F>
 where
-    P: ParserMut,
-    F: FnMut(&mut Iter<P, &mut P::Input, P::Output>) -> Option<O>,
+    P: ParserMut<I>,
+    F: FnMut(&mut Iter<P, &mut I, P::Output>) -> Option<O>,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = O;
 
-    fn parse_once(mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(mut self, input: &mut I) -> Option<Self::Output> {
         self.parse_mut(input)
     }
 }
 
-impl<P, F, O> ParserMut for Many1<P, F>
+impl<P, F, I, O> ParserMut<I> for Many1<P, F>
 where
-    P: ParserMut,
-    F: FnMut(&mut Iter<P, &mut P::Input, P::Output>) -> Option<O>,
+    P: ParserMut<I>,
+    F: FnMut(&mut Iter<P, &mut I, P::Output>) -> Option<O>,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         let first = self.parser.parse_mut(input)?;
 
         let mut iter = Iter {
@@ -73,12 +75,13 @@ where
     }
 }
 
-impl<P, F, O> Parser for Many1<P, F>
+impl<P, F, I, O> Parser<I> for Many1<P, F>
 where
-    P: Parser,
-    F: Fn(&mut Iter<P, &mut P::Input, P::Output>) -> Option<O>,
+    P: Parser<I>,
+    F: Fn(&mut Iter<P, &mut I, P::Output>) -> Option<O>,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         let first = self.parser.parse(input)?;
 
         let mut iter = Iter {

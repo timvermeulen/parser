@@ -3,23 +3,24 @@ use super::*;
 #[derive(Copy, Clone)]
 pub struct SkipMany<P>(P);
 
-impl<P> ParserOnce for SkipMany<P>
+impl<P, I> ParserOnce<I> for SkipMany<P>
 where
-    P: ParserMut,
+    P: ParserMut<I>,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = ();
 
-    fn parse_once(mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(mut self, input: &mut I) -> Option<Self::Output> {
         self.parse_mut(input)
     }
 }
 
-impl<P> ParserMut for SkipMany<P>
+impl<P, I> ParserMut<I> for SkipMany<P>
 where
-    P: ParserMut,
+    P: ParserMut<I>,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_mut_ref()
             .many_mut(|iter| {
@@ -30,11 +31,12 @@ where
     }
 }
 
-impl<P> Parser for SkipMany<P>
+impl<P, I> Parser<I> for SkipMany<P>
 where
-    P: Parser,
+    P: Parser<I>,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_ref()
             .many(|iter| {

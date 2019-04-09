@@ -6,27 +6,28 @@ pub struct FromStr<P, O> {
     _marker: PhantomData<O>,
 }
 
-impl<'a, P, O> ParserOnce for FromStr<P, O>
+impl<'a, P, I, O> ParserOnce<I> for FromStr<P, O>
 where
-    P: ParserOnce<Output = &'a str>,
+    P: ParserOnce<I, Output = &'a str>,
+    I: Stream,
     O: std::str::FromStr,
 {
-    type Input = P::Input;
     type Output = O;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         self.parser
             .and_then(|s: &str| s.parse().ok())
             .parse_once(input)
     }
 }
 
-impl<'a, P, O> ParserMut for FromStr<P, O>
+impl<'a, P, I, O> ParserMut<I> for FromStr<P, O>
 where
-    P: ParserMut<Output = &'a str>,
+    P: ParserMut<I, Output = &'a str>,
+    I: Stream,
     O: std::str::FromStr,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parser
             .by_mut_ref()
             .and_then(|s: &str| s.parse().ok())
@@ -34,12 +35,13 @@ where
     }
 }
 
-impl<'a, P, O> Parser for FromStr<P, O>
+impl<'a, P, I, O> Parser<I> for FromStr<P, O>
 where
-    P: Parser<Output = &'a str>,
+    P: Parser<I, Output = &'a str>,
+    I: Stream,
     O: std::str::FromStr,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.parser
             .by_ref()
             .and_then(|s: &str| s.parse().ok())

@@ -3,15 +3,15 @@ use super::*;
 #[derive(Copy, Clone)]
 pub struct FollowedBy<P, Q>(P, Q);
 
-impl<P, Q> ParserOnce for FollowedBy<P, Q>
+impl<P, Q, I> ParserOnce<I> for FollowedBy<P, Q>
 where
-    P: ParserOnce,
-    Q: ParserOnce<Input = P::Input>,
+    P: ParserOnce<I>,
+    Q: ParserOnce<I>,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = (P::Output, Q::Output);
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         let q = self.1;
         self.0
             .parse_once(input)
@@ -19,12 +19,13 @@ where
     }
 }
 
-impl<P, Q> ParserMut for FollowedBy<P, Q>
+impl<P, Q, I> ParserMut<I> for FollowedBy<P, Q>
 where
-    P: ParserMut,
-    Q: ParserMut<Input = P::Input>,
+    P: ParserMut<I>,
+    Q: ParserMut<I>,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.0.parse_mut(input).and_then(|output1| {
             self.1
                 .parse_mut(input)
@@ -33,12 +34,13 @@ where
     }
 }
 
-impl<P, Q> Parser for FollowedBy<P, Q>
+impl<P, Q, I> Parser<I> for FollowedBy<P, Q>
 where
-    P: Parser,
-    Q: Parser<Input = P::Input>,
+    P: Parser<I>,
+    Q: Parser<I>,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.0
             .parse(input)
             .and_then(|output1| self.1.parse(input).map(move |output2| (output1, output2)))

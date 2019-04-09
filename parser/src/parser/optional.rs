@@ -3,14 +3,14 @@ use super::*;
 #[derive(Copy, Clone)]
 pub struct Optional<P>(P);
 
-impl<P> ParserOnce for Optional<P>
+impl<P, I> ParserOnce<I> for Optional<P>
 where
-    P: ParserOnce,
+    P: ParserOnce<I>,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = Option<P::Output>;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         let (output, consumed) = self.0.parse_once_and_check_consumed(input);
         if output.is_some() {
             Some(output)
@@ -22,11 +22,12 @@ where
     }
 }
 
-impl<P> ParserMut for Optional<P>
+impl<P, I> ParserMut<I> for Optional<P>
 where
-    P: ParserMut,
+    P: ParserMut<I>,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         let (output, consumed) = self.0.parse_mut_and_check_consumed(input);
         if output.is_some() {
             Some(output)
@@ -38,11 +39,12 @@ where
     }
 }
 
-impl<P> Parser for Optional<P>
+impl<P, I> Parser<I> for Optional<P>
 where
-    P: Parser,
+    P: Parser<I>,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         let (output, consumed) = self.0.parse_and_check_consumed(input);
         if output.is_some() {
             Some(output)
@@ -54,6 +56,7 @@ where
     }
 }
 
+// TODO: require `P: ParserOnce`?
 pub fn optional<P>(p: P) -> Optional<P> {
     Optional(p)
 }

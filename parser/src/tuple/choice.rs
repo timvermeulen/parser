@@ -1,28 +1,27 @@
 use super::*;
 
-pub trait ChoiceParserOnce {
-    type Input: Stream;
+pub trait ChoiceParserOnce<Input: Stream> {
     type Output;
 
-    fn parse_choice_once(self, input: &mut Self::Input) -> Option<Self::Output>;
+    fn parse_choice_once(self, input: &mut Input) -> Option<Self::Output>;
 }
 
-pub trait ChoiceParserMut: ChoiceParserOnce {
-    fn parse_choice_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output>;
+pub trait ChoiceParserMut<Input: Stream>: ChoiceParserOnce<Input> {
+    fn parse_choice_mut(&mut self, input: &mut Input) -> Option<Self::Output>;
 }
 
-pub trait ChoiceParser: ChoiceParserMut {
-    fn parse_choice(&self, input: &mut Self::Input) -> Option<Self::Output>;
+pub trait ChoiceParser<Input: Stream>: ChoiceParserMut<Input> {
+    fn parse_choice(&self, input: &mut Input) -> Option<Self::Output>;
 }
 
-pub struct Choice<P, I, O> {
+pub struct Choice<P, O> {
     parser: P,
-    _marker: PhantomData<(I, O)>,
+    _marker: PhantomData<O>,
 }
 
-impl<P, I, O> Copy for Choice<P, I, O> where P: Copy {}
+impl<P, O> Copy for Choice<P, O> where P: Copy {}
 
-impl<P, I, O> Clone for Choice<P, I, O>
+impl<P, O> Clone for Choice<P, O>
 where
     P: Clone,
 {
@@ -34,39 +33,42 @@ where
     }
 }
 
-impl<P, O> ParserOnce for Choice<P, P::Input, O>
+impl<P, I, O> ParserOnce<I> for Choice<P, O>
 where
-    P: ChoiceParserOnce<Output = O>,
+    P: ChoiceParserOnce<I, Output = O>,
+    I: Stream,
 {
-    type Input = P::Input;
     type Output = O;
 
-    fn parse_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse_choice_once(input)
     }
 }
 
-impl<P, O> ParserMut for Choice<P, P::Input, O>
+impl<P, I, O> ParserMut<I> for Choice<P, O>
 where
-    P: ChoiceParserMut<Output = O>,
+    P: ChoiceParserMut<I, Output = O>,
+    I: Stream,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse_choice_mut(input)
     }
 }
 
-impl<P, O> Parser for Choice<P, P::Input, O>
+impl<P, I, O> Parser<I> for Choice<P, O>
 where
-    P: ChoiceParser<Output = O>,
+    P: ChoiceParser<I, Output = O>,
+    I: Stream,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse_choice(input)
     }
 }
 
-pub fn choice<P, O>(parser: P) -> Choice<P, P::Input, O>
+pub fn choice<P, I, O>(parser: P) -> Choice<P, O>
 where
-    P: ChoiceParserOnce<Output = O>,
+    P: ChoiceParserOnce<I, Output = O>,
+    I: Stream,
 {
     Choice {
         parser,
@@ -74,65 +76,63 @@ where
     }
 }
 
-impl<P1, P2, I, O> ChoiceParserOnce for (P1, P2)
+impl<P1, P2, I, O> ChoiceParserOnce<I> for (P1, P2)
 where
-    P1: ParserOnce<Input = I, Output = O>,
-    P2: ParserOnce<Input = I, Output = O>,
+    P1: ParserOnce<I, Output = O>,
+    P2: ParserOnce<I, Output = O>,
     I: Stream,
 {
-    type Input = I;
     type Output = O;
 
-    fn parse_choice_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_choice_once(self, input: &mut I) -> Option<Self::Output> {
         self.0.or(self.1).parse_once(input)
     }
 }
 
-impl<P1, P2, I, O> ChoiceParserMut for (P1, P2)
+impl<P1, P2, I, O> ChoiceParserMut<I> for (P1, P2)
 where
-    P1: ParserMut<Input = I, Output = O>,
-    P2: ParserMut<Input = I, Output = O>,
+    P1: ParserMut<I, Output = O>,
+    P2: ParserMut<I, Output = O>,
     I: Stream,
 {
-    fn parse_choice_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_choice_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.0.by_mut_ref().or(&mut self.1).parse_mut(input)
     }
 }
 
-impl<P1, P2, I, O> ChoiceParser for (P1, P2)
+impl<P1, P2, I, O> ChoiceParser<I> for (P1, P2)
 where
-    P1: Parser<Input = I, Output = O>,
-    P2: Parser<Input = I, Output = O>,
+    P1: Parser<I, Output = O>,
+    P2: Parser<I, Output = O>,
     I: Stream,
 {
-    fn parse_choice(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_choice(&self, input: &mut I) -> Option<Self::Output> {
         self.0.by_ref().or(&self.1).parse(input)
     }
 }
 
-impl<P1, P2, P3, I, O> ChoiceParserOnce for (P1, P2, P3)
+impl<P1, P2, P3, I, O> ChoiceParserOnce<I> for (P1, P2, P3)
 where
-    P1: ParserOnce<Input = I, Output = O>,
-    P2: ParserOnce<Input = I, Output = O>,
-    P3: ParserOnce<Input = I, Output = O>,
+    P1: ParserOnce<I, Output = O>,
+    P2: ParserOnce<I, Output = O>,
+    P3: ParserOnce<I, Output = O>,
     I: Stream,
 {
-    type Input = I;
     type Output = O;
 
-    fn parse_choice_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_choice_once(self, input: &mut I) -> Option<Self::Output> {
         self.0.or(choice((self.1, self.2))).parse_once(input)
     }
 }
 
-impl<P1, P2, P3, I, O> ChoiceParserMut for (P1, P2, P3)
+impl<P1, P2, P3, I, O> ChoiceParserMut<I> for (P1, P2, P3)
 where
-    P1: ParserMut<Input = I, Output = O>,
-    P2: ParserMut<Input = I, Output = O>,
-    P3: ParserMut<Input = I, Output = O>,
+    P1: ParserMut<I, Output = O>,
+    P2: ParserMut<I, Output = O>,
+    P3: ParserMut<I, Output = O>,
     I: Stream,
 {
-    fn parse_choice_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_choice_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_mut_ref()
             .or(choice((&mut self.1, &mut self.2)))
@@ -140,45 +140,44 @@ where
     }
 }
 
-impl<P1, P2, P3, I, O> ChoiceParser for (P1, P2, P3)
+impl<P1, P2, P3, I, O> ChoiceParser<I> for (P1, P2, P3)
 where
-    P1: Parser<Input = I, Output = O>,
-    P2: Parser<Input = I, Output = O>,
-    P3: Parser<Input = I, Output = O>,
+    P1: Parser<I, Output = O>,
+    P2: Parser<I, Output = O>,
+    P3: Parser<I, Output = O>,
     I: Stream,
 {
-    fn parse_choice(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_choice(&self, input: &mut I) -> Option<Self::Output> {
         self.0.by_ref().or(choice((&self.1, &self.2))).parse(input)
     }
 }
 
-impl<P1, P2, P3, P4, I, O> ChoiceParserOnce for (P1, P2, P3, P4)
+impl<P1, P2, P3, P4, I, O> ChoiceParserOnce<I> for (P1, P2, P3, P4)
 where
-    P1: ParserOnce<Input = I, Output = O>,
-    P2: ParserOnce<Input = I, Output = O>,
-    P3: ParserOnce<Input = I, Output = O>,
-    P4: ParserOnce<Input = I, Output = O>,
+    P1: ParserOnce<I, Output = O>,
+    P2: ParserOnce<I, Output = O>,
+    P3: ParserOnce<I, Output = O>,
+    P4: ParserOnce<I, Output = O>,
     I: Stream,
 {
-    type Input = I;
     type Output = O;
 
-    fn parse_choice_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_choice_once(self, input: &mut I) -> Option<Self::Output> {
         self.0
             .or(choice((self.1, self.2, self.3)))
             .parse_once(input)
     }
 }
 
-impl<P1, P2, P3, P4, I, O> ChoiceParserMut for (P1, P2, P3, P4)
+impl<P1, P2, P3, P4, I, O> ChoiceParserMut<I> for (P1, P2, P3, P4)
 where
-    P1: ParserMut<Input = I, Output = O>,
-    P2: ParserMut<Input = I, Output = O>,
-    P3: ParserMut<Input = I, Output = O>,
-    P4: ParserMut<Input = I, Output = O>,
+    P1: ParserMut<I, Output = O>,
+    P2: ParserMut<I, Output = O>,
+    P3: ParserMut<I, Output = O>,
+    P4: ParserMut<I, Output = O>,
     I: Stream,
 {
-    fn parse_choice_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_choice_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_mut_ref()
             .or(choice((&mut self.1, &mut self.2, &mut self.3)))
@@ -186,15 +185,15 @@ where
     }
 }
 
-impl<P1, P2, P3, P4, I, O> ChoiceParser for (P1, P2, P3, P4)
+impl<P1, P2, P3, P4, I, O> ChoiceParser<I> for (P1, P2, P3, P4)
 where
-    P1: Parser<Input = I, Output = O>,
-    P2: Parser<Input = I, Output = O>,
-    P3: Parser<Input = I, Output = O>,
-    P4: Parser<Input = I, Output = O>,
+    P1: Parser<I, Output = O>,
+    P2: Parser<I, Output = O>,
+    P3: Parser<I, Output = O>,
+    P4: Parser<I, Output = O>,
     I: Stream,
 {
-    fn parse_choice(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_choice(&self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_ref()
             .or(choice((&self.1, &self.2, &self.3)))
@@ -202,35 +201,34 @@ where
     }
 }
 
-impl<P1, P2, P3, P4, P5, I, O> ChoiceParserOnce for (P1, P2, P3, P4, P5)
+impl<P1, P2, P3, P4, P5, I, O> ChoiceParserOnce<I> for (P1, P2, P3, P4, P5)
 where
-    P1: ParserOnce<Input = I, Output = O>,
-    P2: ParserOnce<Input = I, Output = O>,
-    P3: ParserOnce<Input = I, Output = O>,
-    P4: ParserOnce<Input = I, Output = O>,
-    P5: ParserOnce<Input = I, Output = O>,
+    P1: ParserOnce<I, Output = O>,
+    P2: ParserOnce<I, Output = O>,
+    P3: ParserOnce<I, Output = O>,
+    P4: ParserOnce<I, Output = O>,
+    P5: ParserOnce<I, Output = O>,
     I: Stream,
 {
-    type Input = I;
     type Output = O;
 
-    fn parse_choice_once(self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_choice_once(self, input: &mut I) -> Option<Self::Output> {
         self.0
             .or(choice((self.1, self.2, self.3, self.4)))
             .parse_once(input)
     }
 }
 
-impl<P1, P2, P3, P4, P5, I, O> ChoiceParserMut for (P1, P2, P3, P4, P5)
+impl<P1, P2, P3, P4, P5, I, O> ChoiceParserMut<I> for (P1, P2, P3, P4, P5)
 where
-    P1: ParserMut<Input = I, Output = O>,
-    P2: ParserMut<Input = I, Output = O>,
-    P3: ParserMut<Input = I, Output = O>,
-    P4: ParserMut<Input = I, Output = O>,
-    P5: ParserMut<Input = I, Output = O>,
+    P1: ParserMut<I, Output = O>,
+    P2: ParserMut<I, Output = O>,
+    P3: ParserMut<I, Output = O>,
+    P4: ParserMut<I, Output = O>,
+    P5: ParserMut<I, Output = O>,
     I: Stream,
 {
-    fn parse_choice_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_choice_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_mut_ref()
             .or(choice((&mut self.1, &mut self.2, &mut self.3, &mut self.4)))
@@ -238,16 +236,16 @@ where
     }
 }
 
-impl<P1, P2, P3, P4, P5, I, O> ChoiceParser for (P1, P2, P3, P4, P5)
+impl<P1, P2, P3, P4, P5, I, O> ChoiceParser<I> for (P1, P2, P3, P4, P5)
 where
-    P1: Parser<Input = I, Output = O>,
-    P2: Parser<Input = I, Output = O>,
-    P3: Parser<Input = I, Output = O>,
-    P4: Parser<Input = I, Output = O>,
-    P5: Parser<Input = I, Output = O>,
+    P1: Parser<I, Output = O>,
+    P2: Parser<I, Output = O>,
+    P3: Parser<I, Output = O>,
+    P4: Parser<I, Output = O>,
+    P5: Parser<I, Output = O>,
     I: Stream,
 {
-    fn parse_choice(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_choice(&self, input: &mut I) -> Option<Self::Output> {
         self.0
             .by_ref()
             .or(choice((&self.1, &self.2, &self.3, &self.4)))

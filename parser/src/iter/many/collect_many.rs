@@ -19,25 +19,26 @@ where
     }
 }
 
-impl<P, O> ParserOnce for CollectMany<P, O>
+impl<P, I, O> ParserOnce<I> for CollectMany<P, O>
 where
-    P: ParserMut,
+    P: ParserMut<I>,
+    I: Stream,
     O: FromIterator<P::Output>,
 {
-    type Input = P::Input;
     type Output = O;
 
-    fn parse_once(mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_once(mut self, input: &mut I) -> Option<Self::Output> {
         self.parse_mut(input)
     }
 }
 
-impl<P, O> ParserMut for CollectMany<P, O>
+impl<P, I, O> ParserMut<I> for CollectMany<P, O>
 where
-    P: ParserMut,
+    P: ParserMut<I>,
+    I: Stream,
     O: FromIterator<P::Output>,
 {
-    fn parse_mut(&mut self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parser
             .by_mut_ref()
             .many_mut(|iter| Some(iter.collect()))
@@ -45,12 +46,13 @@ where
     }
 }
 
-impl<P, O> Parser for CollectMany<P, O>
+impl<P, I, O> Parser<I> for CollectMany<P, O>
 where
-    P: Parser,
+    P: Parser<I>,
+    I: Stream,
     O: FromIterator<P::Output>,
 {
-    fn parse(&self, input: &mut Self::Input) -> Option<Self::Output> {
+    fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.parser
             .by_ref()
             .many(|iter| Some(iter.collect()))
