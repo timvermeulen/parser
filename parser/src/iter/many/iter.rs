@@ -8,7 +8,6 @@ pub struct ManyIter<P, I> {
 impl<P, I> Iterator for ManyIter<P, I>
 where
     P: ParserMut<I>,
-    I: Stream,
 {
     type Item = P::Output;
 
@@ -20,7 +19,6 @@ where
 pub fn iter<P, I>(parser: P, input: I) -> ManyIter<P, I>
 where
     P: ParserMut<I>,
-    I: Stream,
 {
     ManyIter { parser, input }
 }

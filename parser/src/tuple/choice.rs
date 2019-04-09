@@ -1,16 +1,16 @@
 use super::*;
 
-pub trait ChoiceParserOnce<Input: Stream> {
+pub trait ChoiceParserOnce<Input> {
     type Output;
 
     fn parse_choice_once(self, input: &mut Input) -> Option<Self::Output>;
 }
 
-pub trait ChoiceParserMut<Input: Stream>: ChoiceParserOnce<Input> {
+pub trait ChoiceParserMut<Input>: ChoiceParserOnce<Input> {
     fn parse_choice_mut(&mut self, input: &mut Input) -> Option<Self::Output>;
 }
 
-pub trait ChoiceParser<Input: Stream>: ChoiceParserMut<Input> {
+pub trait ChoiceParser<Input>: ChoiceParserMut<Input> {
     fn parse_choice(&self, input: &mut Input) -> Option<Self::Output>;
 }
 
@@ -36,7 +36,6 @@ where
 impl<P, I, O> ParserOnce<I> for Choice<P, O>
 where
     P: ChoiceParserOnce<I, Output = O>,
-    I: Stream,
 {
     type Output = O;
 
@@ -48,7 +47,6 @@ where
 impl<P, I, O> ParserMut<I> for Choice<P, O>
 where
     P: ChoiceParserMut<I, Output = O>,
-    I: Stream,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse_choice_mut(input)
@@ -58,7 +56,6 @@ where
 impl<P, I, O> Parser<I> for Choice<P, O>
 where
     P: ChoiceParser<I, Output = O>,
-    I: Stream,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse_choice(input)
@@ -68,7 +65,6 @@ where
 pub fn choice<P, I, O>(parser: P) -> Choice<P, O>
 where
     P: ChoiceParserOnce<I, Output = O>,
-    I: Stream,
 {
     Choice {
         parser,

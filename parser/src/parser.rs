@@ -22,12 +22,15 @@ pub use satisfy::satisfy;
 pub use satisfy_map::{satisfy_map, satisfy_map_mut, satisfy_map_once};
 pub use tokens::tokens;
 
-pub trait ParserOnce<Input: Stream>: Sized {
+pub trait ParserOnce<Input>: Sized {
     type Output;
 
     fn parse_once(self, input: &mut Input) -> Option<Self::Output>;
 
-    fn parse_once_and_check_consumed(self, input: &mut Input) -> (Option<Self::Output>, bool) {
+    fn parse_once_and_check_consumed(self, input: &mut Input) -> (Option<Self::Output>, bool)
+    where
+        Input: Stream,
+    {
         let position = input.position();
         let output = self.parse_once(input);
         (output, input.position() != position)
@@ -37,7 +40,10 @@ pub trait ParserOnce<Input: Stream>: Sized {
         self.parse_once(&mut input)
     }
 
-    fn parse_to_end(self, input: Input) -> Option<Self::Output> {
+    fn parse_to_end(self, input: Input) -> Option<Self::Output>
+    where
+        Input: Stream,
+    {
         chain((self, eof())).map(|(o, _)| o).parse_partial(input)
     }
 
@@ -98,10 +104,13 @@ pub trait ParserOnce<Input: Stream>: Sized {
     }
 }
 
-pub trait ParserMut<Input: Stream>: ParserOnce<Input> {
+pub trait ParserMut<Input>: ParserOnce<Input> {
     fn parse_mut(&mut self, input: &mut Input) -> Option<Self::Output>;
 
-    fn parse_mut_and_check_consumed(&mut self, input: &mut Input) -> (Option<Self::Output>, bool) {
+    fn parse_mut_and_check_consumed(&mut self, input: &mut Input) -> (Option<Self::Output>, bool)
+    where
+        Input: Stream,
+    {
         let position = input.position();
         let output = self.parse_mut(input);
         (output, input.position() != position)
@@ -184,10 +193,13 @@ pub trait ParserMut<Input: Stream>: ParserOnce<Input> {
     }
 }
 
-pub trait Parser<Input: Stream>: ParserMut<Input> {
+pub trait Parser<Input>: ParserMut<Input> {
     fn parse(&self, input: &mut Input) -> Option<Self::Output>;
 
-    fn parse_and_check_consumed(&self, input: &mut Input) -> (Option<Self::Output>, bool) {
+    fn parse_and_check_consumed(&self, input: &mut Input) -> (Option<Self::Output>, bool)
+    where
+        Input: Stream,
+    {
         let position = input.position();
         let output = self.parse(input);
         (output, input.position() != position)
@@ -223,7 +235,6 @@ pub trait Parser<Input: Stream>: ParserMut<Input> {
 impl<P, I> ParserOnce<I> for &mut P
 where
     P: ParserMut<I>,
-    I: Stream,
 {
     type Output = P::Output;
 
@@ -235,7 +246,6 @@ where
 impl<P, I> ParserMut<I> for &mut P
 where
     P: ParserMut<I>,
-    I: Stream,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         (*self).parse_mut(input)
@@ -245,7 +255,6 @@ where
 impl<P, I> ParserOnce<I> for &P
 where
     P: Parser<I>,
-    I: Stream,
 {
     type Output = P::Output;
 
@@ -257,7 +266,6 @@ where
 impl<P, I> ParserMut<I> for &P
 where
     P: Parser<I>,
-    I: Stream,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parse(input)
@@ -267,7 +275,6 @@ where
 impl<P, I> Parser<I> for &P
 where
     P: Parser<I>,
-    I: Stream,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         (*self).parse(input)

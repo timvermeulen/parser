@@ -12,7 +12,6 @@ where
     P: ParserOnce<I>,
     L: ParserOnce<I>,
     R: ParserOnce<I>,
-    I: Stream,
 {
     type Output = P::Output;
 
@@ -28,7 +27,6 @@ where
     P: ParserMut<I>,
     L: ParserMut<I>,
     R: ParserMut<I>,
-    I: Stream,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         chain((&mut self.left, &mut self.parser, &mut self.right))
@@ -42,7 +40,6 @@ where
     P: Parser<I>,
     L: Parser<I>,
     R: Parser<I>,
-    I: Stream,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         chain((&self.left, &self.parser, &self.right))

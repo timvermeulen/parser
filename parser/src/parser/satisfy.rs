@@ -21,8 +21,8 @@ where
 
 impl<F, I> ParserOnce<I> for Satisfy<F, I>
 where
-    I: Stream,
     F: FnOnce(I::Item) -> bool,
+    I: Stream,
 {
     type Output = I::Item;
 
@@ -33,8 +33,8 @@ where
 
 impl<F, I> ParserMut<I> for Satisfy<F, I>
 where
-    I: Stream,
     F: FnMut(I::Item) -> bool,
+    I: Stream,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         satisfy_map_mut(move |x| if (self.f)(x) { Some(x) } else { None }).parse_mut(input)
@@ -43,8 +43,8 @@ where
 
 impl<F, I> Parser<I> for Satisfy<F, I>
 where
-    I: Stream,
     F: Fn(I::Item) -> bool,
+    I: Stream,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         satisfy_map(move |x| if (self.f)(x) { Some(x) } else { None }).parse(input)

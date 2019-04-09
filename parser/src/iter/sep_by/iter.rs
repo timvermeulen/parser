@@ -35,7 +35,6 @@ pub fn iter<P, Q, I>(parser: P, separator: Q, input: I) -> SepByIter<P, Q, I>
 where
     P: ParserMut<I>,
     Q: ParserMut<I>,
-    I: Stream,
 {
     SepByIter {
         parser,

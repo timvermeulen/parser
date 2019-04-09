@@ -7,7 +7,6 @@ impl<P, Q, I> ParserOnce<I> for FollowedBy<P, Q>
 where
     P: ParserOnce<I>,
     Q: ParserOnce<I>,
-    I: Stream,
 {
     type Output = (P::Output, Q::Output);
 
@@ -23,7 +22,6 @@ impl<P, Q, I> ParserMut<I> for FollowedBy<P, Q>
 where
     P: ParserMut<I>,
     Q: ParserMut<I>,
-    I: Stream,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.0.parse_mut(input).and_then(|output1| {
@@ -38,7 +36,6 @@ impl<P, Q, I> Parser<I> for FollowedBy<P, Q>
 where
     P: Parser<I>,
     Q: Parser<I>,
-    I: Stream,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.0

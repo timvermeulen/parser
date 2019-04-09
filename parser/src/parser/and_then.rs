@@ -10,7 +10,6 @@ impl<P, F, I, O> ParserOnce<I> for AndThen<P, F>
 where
     P: ParserOnce<I>,
     F: FnOnce(P::Output) -> Option<O>,
-    I: Stream,
 {
     type Output = O;
 
@@ -23,7 +22,6 @@ impl<P, F, I, O> ParserMut<I> for AndThen<P, F>
 where
     P: ParserMut<I>,
     F: FnMut(P::Output) -> Option<O>,
-    I: Stream,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse_mut(input).and_then(&mut self.f)
@@ -34,7 +32,6 @@ impl<P, F, I, O> Parser<I> for AndThen<P, F>
 where
     P: Parser<I>,
     F: Fn(P::Output) -> Option<O>,
-    I: Stream,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse(input).and_then(&self.f)

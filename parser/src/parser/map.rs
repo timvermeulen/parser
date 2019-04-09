@@ -10,7 +10,6 @@ impl<P, F, I, O> ParserOnce<I> for Map<P, F>
 where
     P: ParserOnce<I>,
     F: FnOnce(P::Output) -> O,
-    I: Stream,
 {
     type Output = O;
 
@@ -23,7 +22,6 @@ impl<P, F, I, O> ParserMut<I> for Map<P, F>
 where
     P: ParserMut<I>,
     F: FnMut(P::Output) -> O,
-    I: Stream,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse_mut(input).map(&mut self.f)
@@ -34,7 +32,6 @@ impl<P, F, I, O> Parser<I> for Map<P, F>
 where
     P: Parser<I>,
     F: Fn(P::Output) -> O,
-    I: Stream,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.parser.parse(input).map(&self.f)

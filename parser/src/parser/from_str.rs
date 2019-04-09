@@ -9,7 +9,6 @@ pub struct FromStr<P, O> {
 impl<'a, P, I, O> ParserOnce<I> for FromStr<P, O>
 where
     P: ParserOnce<I, Output = &'a str>,
-    I: Stream,
     O: std::str::FromStr,
 {
     type Output = O;
@@ -24,7 +23,6 @@ where
 impl<'a, P, I, O> ParserMut<I> for FromStr<P, O>
 where
     P: ParserMut<I, Output = &'a str>,
-    I: Stream,
     O: std::str::FromStr,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
@@ -38,7 +36,6 @@ where
 impl<'a, P, I, O> Parser<I> for FromStr<P, O>
 where
     P: Parser<I, Output = &'a str>,
-    I: Stream,
     O: std::str::FromStr,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {

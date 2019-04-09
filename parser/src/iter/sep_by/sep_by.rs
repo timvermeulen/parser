@@ -42,7 +42,6 @@ where
     P: ParserMut<I>,
     Q: ParserMut<I>,
     F: FnMut(&mut Iter<P, Q, &mut I>) -> Option<O>,
-    I: Stream,
 {
     type Output = O;
 
@@ -56,7 +55,6 @@ where
     P: ParserMut<I>,
     Q: ParserMut<I>,
     F: FnMut(&mut Iter<P, Q, &mut I>) -> Option<O>,
-    I: Stream,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         (self.f)(&mut Iter {
@@ -73,7 +71,6 @@ where
     P: Parser<I>,
     Q: Parser<I>,
     F: Fn(&mut Iter<P, Q, &mut I>) -> Option<O>,
-    I: Stream,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         let mut iter = Iter {

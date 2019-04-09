@@ -18,7 +18,6 @@ where
 impl<F, I, O> ParserOnce<I> for FromFn<F>
 where
     F: FnOnce(&mut I) -> Option<O>,
-    I: Stream,
 {
     type Output = O;
 
@@ -30,7 +29,6 @@ where
 impl<F, I, O> ParserMut<I> for FromFn<F>
 where
     F: FnMut(&mut I) -> Option<O>,
-    I: Stream,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         (self.f)(input)
@@ -40,7 +38,6 @@ where
 impl<F, I, O> Parser<I> for FromFn<F>
 where
     F: Fn(&mut I) -> Option<O>,
-    I: Stream,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         (self.f)(input)
@@ -50,7 +47,6 @@ where
 pub fn from_fn_once<F, I, O>(f: F) -> FromFn<F>
 where
     F: FnOnce(&mut I) -> Option<O>,
-    I: Stream,
 {
     FromFn { f }
 }
@@ -58,7 +54,6 @@ where
 pub fn from_fn_mut<F, I, O>(f: F) -> FromFn<F>
 where
     F: FnMut(&mut I) -> Option<O>,
-    I: Stream,
 {
     FromFn { f }
 }
@@ -66,7 +61,6 @@ where
 pub fn from_fn<F, I, O>(f: F) -> FromFn<F>
 where
     F: Fn(&mut I) -> Option<O>,
-    I: Stream,
 {
     FromFn { f }
 }

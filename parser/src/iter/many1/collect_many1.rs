@@ -22,7 +22,6 @@ where
 impl<P, I, O> ParserOnce<I> for CollectMany1<P, O>
 where
     P: ParserMut<I>,
-    I: Stream,
     O: FromIterator<P::Output>,
 {
     type Output = O;
@@ -35,7 +34,6 @@ where
 impl<P, I, O> ParserMut<I> for CollectMany1<P, O>
 where
     P: ParserMut<I>,
-    I: Stream,
     O: FromIterator<P::Output>,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
@@ -49,7 +47,6 @@ where
 impl<P, I, O> Parser<I> for CollectMany1<P, O>
 where
     P: Parser<I>,
-    I: Stream,
     O: FromIterator<P::Output>,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {

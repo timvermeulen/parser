@@ -6,7 +6,6 @@ pub struct SkipMany1<P>(P);
 impl<P, I> ParserOnce<I> for SkipMany1<P>
 where
     P: ParserMut<I>,
-    I: Stream,
 {
     type Output = ();
 
@@ -18,7 +17,6 @@ where
 impl<P, I> ParserMut<I> for SkipMany1<P>
 where
     P: ParserMut<I>,
-    I: Stream,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.0
@@ -34,7 +32,6 @@ where
 impl<P, I> Parser<I> for SkipMany1<P>
 where
     P: Parser<I>,
-    I: Stream,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         self.0
