@@ -1,5 +1,5 @@
 #![feature(try_trait, specialization)]
-#![warn(clippy::all)]
+#![warn(clippy::all, rust_2018_idioms)]
 #![allow(clippy::module_inception)]
 
 mod iter;
@@ -25,7 +25,6 @@ pub mod prelude {
         },
         tuple::{chain, choice},
     };
-
 }
 
 #[cfg(test)]

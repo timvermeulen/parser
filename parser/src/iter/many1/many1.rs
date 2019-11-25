@@ -1,6 +1,7 @@
 use super::*;
 use std::ops::Try;
 
+#[derive(Clone)]
 pub struct Iter<P, I, O> {
     parser: *mut P,
     input: I,

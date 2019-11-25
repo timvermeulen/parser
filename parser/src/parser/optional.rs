@@ -56,7 +56,6 @@ where
     }
 }
 
-// TODO: require `P: ParserOnce`?
 pub fn optional<P>(p: P) -> Optional<P> {
     Optional(p)
 }

@@ -44,7 +44,7 @@ pub trait ParserOnce<Input>: Sized {
     where
         Input: Stream,
     {
-        chain((self, eof())).map(|(o, _)| o).parse_partial(input)
+        chain((self, eof())).map(|(o, ())| o).parse_partial(input)
     }
 
     // TODO: require `F: FnOnce(Self::Output) -> O`

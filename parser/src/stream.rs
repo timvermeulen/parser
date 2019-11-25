@@ -1,13 +1,3 @@
-mod is_empty {
-    pub fn str_is_empty(string: &str) -> bool {
-        string.is_empty()
-    }
-
-    pub fn slice_is_empty<T>(slice: &[T]) -> bool {
-        slice.is_empty()
-    }
-}
-
 pub trait Stream: Copy {
     type Item: Copy;
     type Position: Ord;
@@ -25,7 +15,7 @@ impl<'a> Stream for &'a str {
     type Range = Self;
 
     fn is_empty(&self) -> bool {
-        is_empty::str_is_empty(self)
+        (*self).is_empty()
     }
 
     fn position(&self) -> Self::Position {
@@ -50,7 +40,7 @@ impl<'a, T> Stream for &'a [T] {
     type Range = Self;
 
     fn is_empty(&self) -> bool {
-        is_empty::slice_is_empty(self)
+        (*self).is_empty()
     }
 
     fn position(&self) -> Self::Position {

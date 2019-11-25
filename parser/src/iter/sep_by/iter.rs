@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct SepByIter<P, Q, I> {
     parser: P,
     separator: Q,
@@ -20,7 +21,8 @@ where
             self.start = false;
             self.parser.parse_mut(&mut self.input)
         } else {
-            (&mut self.separator)
+            self.separator
+                .by_mut_ref()
                 .followed_by(&mut self.parser)
                 .attempt()
                 .map(|(_, o)| o)

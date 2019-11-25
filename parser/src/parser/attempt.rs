@@ -12,11 +12,10 @@ where
 
     fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         let copy = *input;
-        let output = self.0.parse_once(input);
-        if output.is_none() {
+        self.0.parse_once(input).or_else(|| {
             *input = copy;
-        }
-        output
+            None
+        })
     }
 }
 
@@ -27,11 +26,10 @@ where
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         let copy = *input;
-        let output = self.0.parse_mut(input);
-        if output.is_none() {
+        self.0.parse_mut(input).or_else(|| {
             *input = copy;
-        }
-        output
+            None
+        })
     }
 }
 
@@ -42,11 +40,10 @@ where
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         let copy = *input;
-        let output = self.0.parse(input);
-        if output.is_none() {
+        self.0.parse(input).or_else(|| {
             *input = copy;
-        }
-        output
+            None
+        })
     }
 }
 

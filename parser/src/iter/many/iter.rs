@@ -1,5 +1,6 @@
 use super::*;
 
+#[derive(Clone)]
 pub struct ManyIter<P, I> {
     parser: P,
     input: I,
