@@ -30,7 +30,7 @@ impl<'a> Stream for &'a str {
     }
 
     unsafe fn between(start: Self::Position, end: Self::Position) -> Self::Range {
-        std::str::from_utf8_unchecked(<(&[u8])>::between(start, end))
+        std::str::from_utf8_unchecked(<&[u8]>::between(start, end))
     }
 }
 

@@ -1,6 +1,8 @@
-#![feature(try_trait, specialization)]
+#![feature(specialization)]
+#![allow(incomplete_features)]
 #![warn(clippy::all, rust_2018_idioms)]
 #![allow(clippy::module_inception)]
+#![feature(try_trait_v2)]
 
 mod iter;
 mod parser;

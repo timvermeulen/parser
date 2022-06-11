@@ -44,21 +44,34 @@ pub trait ParserOnce<Input>: Sized {
     where
         Input: Stream,
     {
-        chain((self, eof())).map(|(o, ())| o).parse_partial(input)
+        chain((self, eof()))
+            .map_once(|(o, ())| o)
+            .parse_partial(input)
     }
 
-    // TODO: require `F: FnOnce(Self::Output) -> O`
-    fn map<F>(self, f: F) -> map::Map<Self, F> {
+    // TODO: rename to `map`, and remove `ParserMut::map_mut` and `Parser::map`
+    // see https://github.com/rust-lang/rust/issues/26085
+    fn map_once<O, F>(self, f: F) -> map::Map<Self, F>
+    where
+        F: FnOnce(Self::Output) -> O,
+    {
         map::map(self, f)
     }
 
-    // TODO: require `P: ParserOnce<Input = Self::Input>` and `F: FnOnce(Self::Output) -> P`
-    fn flat_map<F>(self, f: F) -> flat_map::FlatMap<Self, F> {
+    //TODO: rename to `flat_map`, and remove `ParserMut::flat_map_mut` and `Parser::flat_map`
+    fn flat_map_once<P, F>(self, f: F) -> flat_map::FlatMap<Self, F>
+    where
+        P: ParserOnce<Input>,
+        F: FnOnce(Self::Output) -> P,
+    {
         flat_map::flat_map(self, f)
     }
 
-    // TODO: require `F: FnOnce(Self::Output) -> Option<O>`
-    fn and_then<F>(self, f: F) -> and_then::AndThen<Self, F> {
+    // TODO: rename to `and_then`, and remove `ParserMut::and_then_mut` and `Parser::and_then`
+    fn and_then_once<O, F>(self, f: F) -> and_then::AndThen<Self, F>
+    where
+        F: FnOnce(Self::Output) -> Option<O>,
+    {
         and_then::and_then(self, f)
     }
 
@@ -116,7 +129,29 @@ pub trait ParserMut<Input>: ParserOnce<Input> {
         (output, input.position() != position)
     }
 
-    // TODO: remove in favor of `many`
+    fn map_mut<O, F>(self, f: F) -> map::Map<Self, F>
+    where
+        F: FnMut(Self::Output) -> O,
+    {
+        map::map(self, f)
+    }
+
+    fn flat_map_mut<P, F>(self, f: F) -> flat_map::FlatMap<Self, F>
+    where
+        P: ParserMut<Input>,
+        F: FnMut(Self::Output) -> P,
+    {
+        flat_map::flat_map(self, f)
+    }
+
+    fn and_then_mut<O, F>(self, f: F) -> and_then::AndThen<Self, F>
+    where
+        F: FnMut(Self::Output) -> Option<O>,
+    {
+        and_then::and_then(self, f)
+    }
+
+    // TODO: rename to `many` and remove `Parser::many`
     fn many_mut<F, O>(self, f: F) -> many::Many<Self, F>
     where
         F: FnMut(&mut many::Iter<Self, &mut Input>) -> Option<O>,
@@ -139,7 +174,7 @@ pub trait ParserMut<Input>: ParserOnce<Input> {
         many::collect_many(self)
     }
 
-    // TODO: remove in favor of `many1`
+    // TODO: rename to `many1` and remove `Parser::many1`
     fn many1_mut<F, O>(self, f: F) -> many1::Many1<Self, F>
     where
         F: FnMut(&mut many1::Iter<Self, &mut Input, Self::Output>) -> Option<O>,
@@ -158,6 +193,7 @@ pub trait ParserMut<Input>: ParserOnce<Input> {
         many1::collect_many1(self)
     }
 
+    // TODO: rename to `sep_by` and remove `Parser::sep_by`
     fn sep_by_mut<P, F, O>(self, separator: P, f: F) -> sep_by::SepBy<Self, P, F>
     where
         P: ParserMut<Input>,
@@ -203,6 +239,28 @@ pub trait Parser<Input>: ParserMut<Input> {
         let position = input.position();
         let output = self.parse(input);
         (output, input.position() != position)
+    }
+
+    fn map<O, F>(self, f: F) -> map::Map<Self, F>
+    where
+        F: Fn(Self::Output) -> O,
+    {
+        map::map(self, f)
+    }
+
+    fn flat_map<P, F>(self, f: F) -> flat_map::FlatMap<Self, F>
+    where
+        P: Parser<Input>,
+        F: Fn(Self::Output) -> P,
+    {
+        flat_map::flat_map(self, f)
+    }
+
+    fn and_then<O, F>(self, f: F) -> and_then::AndThen<Self, F>
+    where
+        F: Fn(Self::Output) -> Option<O>,
+    {
+        and_then::and_then(self, f)
     }
 
     fn many<F, O>(self, f: F) -> many::Many<Self, F>

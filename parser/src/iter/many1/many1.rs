@@ -23,7 +23,7 @@ where
     fn try_fold<B, F, R>(&mut self, mut state: B, mut f: F) -> R
     where
         F: FnMut(B, Self::Item) -> R,
-        R: Try<Ok = B>,
+        R: Try<Output = B>,
     {
         if let Some(first) = self.first.take() {
             state = f(state, first)?;
@@ -33,7 +33,7 @@ where
             state = f(state, output)?
         }
 
-        Try::from_ok(state)
+        Try::from_output(state)
     }
 }
 

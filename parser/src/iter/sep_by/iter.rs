@@ -25,7 +25,7 @@ where
                 .by_mut_ref()
                 .followed_by(&mut self.parser)
                 .attempt()
-                .map(|(_, o)| o)
+                .map_mut(|(_, o)| o)
                 .parse_mut(&mut self.input)
         }
     }

@@ -118,7 +118,7 @@ where
     fn parse_chain_once(self, input: &mut I) -> Option<Self::Output> {
         self.0
             .followed_by(chain((self.1, self.2)))
-            .map(|(a, (b, c))| (a, b, c))
+            .map_once(|(a, (b, c))| (a, b, c))
             .parse_once(input)
     }
 }
@@ -133,7 +133,7 @@ where
         self.0
             .by_mut_ref()
             .followed_by(chain((&mut self.1, &mut self.2)))
-            .map(|(a, (b, c))| (a, b, c))
+            .map_mut(|(a, (b, c))| (a, b, c))
             .parse_mut(input)
     }
 }
@@ -165,7 +165,7 @@ where
     fn parse_chain_once(self, input: &mut I) -> Option<Self::Output> {
         self.0
             .followed_by(chain((self.1, self.2, self.3)))
-            .map(|(a, (b, c, d))| (a, b, c, d))
+            .map_once(|(a, (b, c, d))| (a, b, c, d))
             .parse_once(input)
     }
 }
@@ -181,7 +181,7 @@ where
         self.0
             .by_mut_ref()
             .followed_by(chain((&mut self.1, &mut self.2, &mut self.3)))
-            .map(|(a, (b, c, d))| (a, b, c, d))
+            .map_mut(|(a, (b, c, d))| (a, b, c, d))
             .parse_mut(input)
     }
 }
@@ -216,7 +216,7 @@ where
     fn parse_chain_once(self, input: &mut I) -> Option<Self::Output> {
         self.0
             .followed_by(chain((self.1, self.2, self.3, self.4)))
-            .map(|(a, (b, c, d, e))| (a, b, c, d, e))
+            .map_once(|(a, (b, c, d, e))| (a, b, c, d, e))
             .parse_once(input)
     }
 }
@@ -233,7 +233,7 @@ where
         self.0
             .by_mut_ref()
             .followed_by(chain((&mut self.1, &mut self.2, &mut self.3, &mut self.4)))
-            .map(|(a, (b, c, d, e))| (a, b, c, d, e))
+            .map_mut(|(a, (b, c, d, e))| (a, b, c, d, e))
             .parse_mut(input)
     }
 }

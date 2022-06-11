@@ -15,7 +15,7 @@ where
 
     fn parse_once(self, input: &mut I) -> Option<Self::Output> {
         self.parser
-            .and_then(|s: &str| s.parse().ok())
+            .and_then_once(|s: &str| s.parse().ok())
             .parse_once(input)
     }
 }
@@ -28,7 +28,7 @@ where
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         self.parser
             .by_mut_ref()
-            .and_then(|s: &str| s.parse().ok())
+            .and_then_mut(|s: &str| s.parse().ok())
             .parse_mut(input)
     }
 }
