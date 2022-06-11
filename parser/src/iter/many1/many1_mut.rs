@@ -1,23 +1,25 @@
 use super::*;
 use std::ops::Try;
 
-pub struct Iter<'a, P, I>
+pub struct IterMut<'a, P, I>
 where
     P: ParserMut<I>,
 {
-    parser: &'a P,
+    parser: &'a mut P,
     input: &'a mut I,
     first: Option<P::Output>,
 }
 
-impl<P, I> Iterator for Iter<'_, P, I>
+impl<P, I> Iterator for IterMut<'_, P, I>
 where
-    P: Parser<I>,
+    P: ParserMut<I>,
 {
     type Item = P::Output;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.first.take().or_else(|| self.parser.parse(self.input))
+        self.first
+            .take()
+            .or_else(|| self.parser.parse_mut(self.input))
     }
 
     fn try_fold<B, F, R>(&mut self, mut state: B, mut f: F) -> R
@@ -38,15 +40,15 @@ where
 }
 
 #[derive(Copy, Clone)]
-pub struct Many1<P, F> {
+pub struct Many1Mut<P, F> {
     parser: P,
     f: F,
 }
 
-impl<P, F, I, O> ParserOnce<I> for Many1<P, F>
+impl<P, F, I, O> ParserOnce<I> for Many1Mut<P, F>
 where
     P: ParserMut<I>,
-    F: FnMut(&mut Iter<'_, P, I>) -> Option<O>,
+    F: FnMut(&mut IterMut<'_, P, I>) -> Option<O>,
 {
     type Output = O;
 
@@ -55,16 +57,16 @@ where
     }
 }
 
-impl<P, F, I, O> ParserMut<I> for Many1<P, F>
+impl<P, F, I, O> ParserMut<I> for Many1Mut<P, F>
 where
     P: ParserMut<I>,
-    F: FnMut(&mut Iter<'_, P, I>) -> Option<O>,
+    F: FnMut(&mut IterMut<'_, P, I>) -> Option<O>,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         let first = self.parser.parse_mut(input)?;
 
-        let mut iter = Iter {
-            parser: &self.parser,
+        let mut iter = IterMut {
+            parser: &mut self.parser,
             input,
             first: Some(first),
         };
@@ -73,24 +75,6 @@ where
     }
 }
 
-impl<P, F, I, O> Parser<I> for Many1<P, F>
-where
-    P: Parser<I>,
-    F: Fn(&mut Iter<'_, P, I>) -> Option<O>,
-{
-    fn parse(&self, input: &mut I) -> Option<Self::Output> {
-        let first = self.parser.parse(input)?;
-
-        let mut iter = Iter {
-            parser: &self.parser,
-            input,
-            first: Some(first),
-        };
-
-        (self.f)(&mut iter)
-    }
-}
-
-pub fn many1<P, F>(parser: P, f: F) -> Many1<P, F> {
-    Many1 { parser, f }
+pub fn many1_mut<P, F>(parser: P, f: F) -> Many1Mut<P, F> {
+    Many1Mut { parser, f }
 }

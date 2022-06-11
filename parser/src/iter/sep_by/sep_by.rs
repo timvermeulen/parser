@@ -1,16 +1,16 @@
 use super::*;
 
-pub struct Iter<P, Q, I> {
-    parser: *mut P,
-    separator: *mut Q,
+pub struct Iter<'a, P, Q, I> {
+    parser: &'a P,
+    separator: &'a Q,
     start: bool,
-    input: I,
+    input: &'a mut I,
 }
 
-impl<P, Q, I> Iterator for Iter<P, Q, &mut I>
+impl<P, Q, I> Iterator for Iter<'_, P, Q, I>
 where
-    P: ParserMut<I>,
-    Q: ParserMut<I>,
+    P: Parser<I>,
+    Q: Parser<I>,
     I: Stream,
 {
     type Item = P::Output;
@@ -18,12 +18,13 @@ where
     fn next(&mut self) -> Option<Self::Item> {
         if self.start {
             self.start = false;
-            unsafe { (*self.parser).parse_mut(&mut self.input) }
+            self.parser.parse_mut(&mut self.input)
         } else {
-            unsafe { (&mut *self.separator).followed_by(&mut *self.parser) }
+            self.separator
+                .followed_by(self.parser)
                 .attempt()
-                .map_mut(|(_, o)| o)
-                .parse_mut(&mut self.input)
+                .map(|(_, o)| o)
+                .parse(&mut self.input)
         }
     }
 
@@ -41,7 +42,7 @@ impl<P, Q, F, I, O> ParserOnce<I> for SepBy<P, Q, F>
 where
     P: ParserMut<I>,
     Q: ParserMut<I>,
-    F: FnMut(&mut Iter<P, Q, &mut I>) -> Option<O>,
+    F: FnMut(&mut Iter<'_, P, Q, I>) -> Option<O>,
 {
     type Output = O;
 
@@ -54,12 +55,12 @@ impl<P, Q, F, I, O> ParserMut<I> for SepBy<P, Q, F>
 where
     P: ParserMut<I>,
     Q: ParserMut<I>,
-    F: FnMut(&mut Iter<P, Q, &mut I>) -> Option<O>,
+    F: FnMut(&mut Iter<'_, P, Q, I>) -> Option<O>,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         (self.f)(&mut Iter {
-            parser: &mut self.parser as *mut P,
-            separator: &mut self.separator as *mut Q,
+            parser: &self.parser,
+            separator: &self.separator,
             start: true,
             input,
         })
@@ -70,12 +71,12 @@ impl<P, Q, F, I, O> Parser<I> for SepBy<P, Q, F>
 where
     P: Parser<I>,
     Q: Parser<I>,
-    F: Fn(&mut Iter<P, Q, &mut I>) -> Option<O>,
+    F: Fn(&mut Iter<'_, P, Q, I>) -> Option<O>,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         let mut iter = Iter {
-            parser: &self.parser as *const P as *mut P,
-            separator: &self.separator as *const Q as *mut Q,
+            parser: &self.parser,
+            separator: &self.separator,
             start: true,
             input,
         };

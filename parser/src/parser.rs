@@ -151,12 +151,12 @@ pub trait ParserMut<Input>: ParserOnce<Input> {
         and_then::and_then(self, f)
     }
 
-    // TODO: rename to `many` and remove `Parser::many`
-    fn many_mut<F, O>(self, f: F) -> many::Many<Self, F>
+    // TODO: maybe somehow combine this with `Parser::many`
+    fn many_mut<F, O>(self, f: F) -> many::ManyMut<Self, F>
     where
-        F: FnMut(&mut many::Iter<Self, &mut Input>) -> Option<O>,
+        F: FnMut(&mut many::IterMut<'_, Self, Input>) -> Option<O>,
     {
-        many::many(self, f)
+        many::many_mut(self, f)
     }
 
     fn iter_many(self, input: Input) -> many::ManyIter<Self, Input> {
@@ -174,12 +174,12 @@ pub trait ParserMut<Input>: ParserOnce<Input> {
         many::collect_many(self)
     }
 
-    // TODO: rename to `many1` and remove `Parser::many1`
-    fn many1_mut<F, O>(self, f: F) -> many1::Many1<Self, F>
+    // TODO: maybe somehow combine this with `Parser::many1`
+    fn many1_mut<F, O>(self, f: F) -> many1::Many1Mut<Self, F>
     where
-        F: FnMut(&mut many1::Iter<Self, &mut Input, Self::Output>) -> Option<O>,
+        F: FnMut(&mut many1::IterMut<'_, Self, Input>) -> Option<O>,
     {
-        many1::many1(self, f)
+        many1::many1_mut(self, f)
     }
 
     fn skip_many1(self) -> many1::SkipMany1<Self> {
@@ -193,13 +193,13 @@ pub trait ParserMut<Input>: ParserOnce<Input> {
         many1::collect_many1(self)
     }
 
-    // TODO: rename to `sep_by` and remove `Parser::sep_by`
-    fn sep_by_mut<P, F, O>(self, separator: P, f: F) -> sep_by::SepBy<Self, P, F>
+    // TODO: maybe somehow combine this with `Parser::sep_by`
+    fn sep_by_mut<P, F, O>(self, separator: P, f: F) -> sep_by::SepByMut<Self, P, F>
     where
         P: ParserMut<Input>,
-        F: FnMut(&mut sep_by::Iter<Self, P, &mut Input>) -> Option<O>,
+        F: FnMut(&mut sep_by::IterMut<'_, Self, P, Input>) -> Option<O>,
     {
-        sep_by::sep_by(self, separator, f)
+        sep_by::sep_by_mut(self, separator, f)
     }
 
     fn iter_sep_by<P>(self, separator: P, input: Input) -> sep_by::SepByIter<Self, P, Input>
@@ -265,14 +265,14 @@ pub trait Parser<Input>: ParserMut<Input> {
 
     fn many<F, O>(self, f: F) -> many::Many<Self, F>
     where
-        F: Fn(&mut many::Iter<Self, &mut Input>) -> Option<O>,
+        F: Fn(&mut many::Iter<'_, Self, Input>) -> Option<O>,
     {
         many::many(self, f)
     }
 
     fn many1<F, O>(self, f: F) -> many1::Many1<Self, F>
     where
-        F: Fn(&mut many1::Iter<Self, &mut Input, Self::Output>) -> Option<O>,
+        F: Fn(&mut many1::Iter<'_, Self, Input>) -> Option<O>,
     {
         many1::many1(self, f)
     }
@@ -280,7 +280,7 @@ pub trait Parser<Input>: ParserMut<Input> {
     fn sep_by<P, F, O>(self, separator: P, f: F) -> sep_by::SepBy<Self, P, F>
     where
         P: Parser<Input>,
-        F: Fn(&mut sep_by::Iter<Self, P, &mut Input>) -> Option<O>,
+        F: Fn(&mut sep_by::Iter<'_, Self, P, Input>) -> Option<O>,
     {
         sep_by::sep_by(self, separator, f)
     }

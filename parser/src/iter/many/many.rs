@@ -1,18 +1,18 @@
 use super::*;
 
-pub struct Iter<P, I> {
-    parser: *mut P,
-    input: I,
+pub struct Iter<'a, P, I> {
+    parser: &'a P,
+    input: &'a mut I,
 }
 
-impl<P, I> Iterator for Iter<P, &mut I>
+impl<P, I> Iterator for Iter<'_, P, I>
 where
-    P: ParserMut<I>,
+    P: Parser<I>,
 {
     type Item = P::Output;
 
     fn next(&mut self) -> Option<Self::Item> {
-        unsafe { (*self.parser).parse_mut(self.input) }
+        self.parser.parse(self.input)
     }
 }
 
@@ -25,7 +25,7 @@ pub struct Many<P, F> {
 impl<P, F, I, O> ParserOnce<I> for Many<P, F>
 where
     P: ParserMut<I>,
-    F: FnMut(&mut Iter<P, &mut I>) -> Option<O>,
+    F: FnMut(&mut Iter<'_, P, I>) -> Option<O>,
 {
     type Output = O;
 
@@ -37,11 +37,11 @@ where
 impl<P, F, I, O> ParserMut<I> for Many<P, F>
 where
     P: ParserMut<I>,
-    F: FnMut(&mut Iter<P, &mut I>) -> Option<O>,
+    F: FnMut(&mut Iter<'_, P, I>) -> Option<O>,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
         let mut iter = Iter {
-            parser: &mut self.parser as *mut P,
+            parser: &self.parser,
             input,
         };
         (self.f)(&mut iter)
@@ -51,11 +51,11 @@ where
 impl<P, F, I, O> Parser<I> for Many<P, F>
 where
     P: Parser<I>,
-    F: Fn(&mut Iter<P, &mut I>) -> Option<O>,
+    F: Fn(&mut Iter<'_, P, I>) -> Option<O>,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
         let mut iter = Iter {
-            parser: &self.parser as *const P as *mut P,
+            parser: &self.parser,
             input,
         };
         (self.f)(&mut iter)
