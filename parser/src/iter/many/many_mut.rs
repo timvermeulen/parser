@@ -25,7 +25,7 @@ pub struct ManyMut<P, F> {
 impl<P, F, I, O> ParserOnce<I> for ManyMut<P, F>
 where
     P: ParserMut<I>,
-    F: FnMut(&mut IterMut<'_, P, I>) -> Option<O>,
+    F: FnMut(IterMut<'_, P, I>) -> Option<O>,
 {
     type Output = O;
 
@@ -37,14 +37,14 @@ where
 impl<P, F, I, O> ParserMut<I> for ManyMut<P, F>
 where
     P: ParserMut<I>,
-    F: FnMut(&mut IterMut<'_, P, I>) -> Option<O>,
+    F: FnMut(IterMut<'_, P, I>) -> Option<O>,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
-        let mut iter = IterMut {
+        let iter = IterMut {
             parser: &mut self.parser,
             input,
         };
-        (self.f)(&mut iter)
+        (self.f)(iter)
     }
 }
 

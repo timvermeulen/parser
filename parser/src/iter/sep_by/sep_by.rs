@@ -42,7 +42,7 @@ impl<P, Q, F, I, O> ParserOnce<I> for SepBy<P, Q, F>
 where
     P: ParserMut<I>,
     Q: ParserMut<I>,
-    F: FnMut(&mut Iter<'_, P, Q, I>) -> Option<O>,
+    F: FnMut(Iter<'_, P, Q, I>) -> Option<O>,
 {
     type Output = O;
 
@@ -55,10 +55,10 @@ impl<P, Q, F, I, O> ParserMut<I> for SepBy<P, Q, F>
 where
     P: ParserMut<I>,
     Q: ParserMut<I>,
-    F: FnMut(&mut Iter<'_, P, Q, I>) -> Option<O>,
+    F: FnMut(Iter<'_, P, Q, I>) -> Option<O>,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {
-        (self.f)(&mut Iter {
+        (self.f)(Iter {
             parser: &self.parser,
             separator: &self.separator,
             start: true,
@@ -71,16 +71,16 @@ impl<P, Q, F, I, O> Parser<I> for SepBy<P, Q, F>
 where
     P: Parser<I>,
     Q: Parser<I>,
-    F: Fn(&mut Iter<'_, P, Q, I>) -> Option<O>,
+    F: Fn(Iter<'_, P, Q, I>) -> Option<O>,
 {
     fn parse(&self, input: &mut I) -> Option<Self::Output> {
-        let mut iter = Iter {
+        let iter = Iter {
             parser: &self.parser,
             separator: &self.separator,
             start: true,
             input,
         };
-        (self.f)(&mut iter)
+        (self.f)(iter)
     }
 }
 
