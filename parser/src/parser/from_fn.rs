@@ -44,6 +44,7 @@ where
     }
 }
 
+// TODO: remove this and `from_fn_mut` in favor of `from_fn`
 pub fn from_fn_once<F, I, O>(f: F) -> FromFn<F>
 where
     F: FnOnce(&mut I) -> Option<O>,

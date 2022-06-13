@@ -24,19 +24,23 @@ pub struct Many<P, F> {
 
 impl<P, F, I, O> ParserOnce<I> for Many<P, F>
 where
-    P: ParserMut<I>,
-    F: FnMut(Iter<'_, P, I>) -> Option<O>,
+    P: Parser<I>,
+    F: FnOnce(Iter<'_, P, I>) -> Option<O>,
 {
     type Output = O;
 
-    fn parse_once(mut self, input: &mut I) -> Option<Self::Output> {
-        self.parse_mut(input)
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
+        let iter = Iter {
+            parser: &self.parser,
+            input,
+        };
+        (self.f)(iter)
     }
 }
 
 impl<P, F, I, O> ParserMut<I> for Many<P, F>
 where
-    P: ParserMut<I>,
+    P: Parser<I>,
     F: FnMut(Iter<'_, P, I>) -> Option<O>,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {

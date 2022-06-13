@@ -40,21 +40,26 @@ pub struct SepBy<P, Q, F> {
 
 impl<P, Q, F, I, O> ParserOnce<I> for SepBy<P, Q, F>
 where
-    P: ParserMut<I>,
-    Q: ParserMut<I>,
-    F: FnMut(Iter<'_, P, Q, I>) -> Option<O>,
+    P: Parser<I>,
+    Q: Parser<I>,
+    F: FnOnce(Iter<'_, P, Q, I>) -> Option<O>,
 {
     type Output = O;
 
-    fn parse_once(mut self, input: &mut I) -> Option<Self::Output> {
-        self.parse_mut(input)
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
+        (self.f)(Iter {
+            parser: &self.parser,
+            separator: &self.separator,
+            start: true,
+            input,
+        })
     }
 }
 
 impl<P, Q, F, I, O> ParserMut<I> for SepBy<P, Q, F>
 where
-    P: ParserMut<I>,
-    Q: ParserMut<I>,
+    P: Parser<I>,
+    Q: Parser<I>,
     F: FnMut(Iter<'_, P, Q, I>) -> Option<O>,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {

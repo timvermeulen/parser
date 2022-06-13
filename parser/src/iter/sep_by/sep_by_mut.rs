@@ -42,12 +42,17 @@ impl<P, Q, F, I, O> ParserOnce<I> for SepByMut<P, Q, F>
 where
     P: ParserMut<I>,
     Q: ParserMut<I>,
-    F: FnMut(IterMut<'_, P, Q, I>) -> Option<O>,
+    F: FnOnce(IterMut<'_, P, Q, I>) -> Option<O>,
 {
     type Output = O;
 
     fn parse_once(mut self, input: &mut I) -> Option<Self::Output> {
-        self.parse_mut(input)
+        (self.f)(IterMut {
+            parser: &mut self.parser,
+            separator: &mut self.separator,
+            start: true,
+            input,
+        })
     }
 }
 

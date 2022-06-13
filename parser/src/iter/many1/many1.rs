@@ -3,7 +3,7 @@ use std::ops::Try;
 
 pub struct Iter<'a, P, I>
 where
-    P: ParserMut<I>,
+    P: ParserOnce<I>,
 {
     parser: &'a P,
     input: &'a mut I,
@@ -45,19 +45,27 @@ pub struct Many1<P, F> {
 
 impl<P, F, I, O> ParserOnce<I> for Many1<P, F>
 where
-    P: ParserMut<I>,
-    F: FnMut(Iter<'_, P, I>) -> Option<O>,
+    P: Parser<I>,
+    F: FnOnce(Iter<'_, P, I>) -> Option<O>,
 {
     type Output = O;
 
-    fn parse_once(mut self, input: &mut I) -> Option<Self::Output> {
-        self.parse_mut(input)
+    fn parse_once(self, input: &mut I) -> Option<Self::Output> {
+        let first = self.parser.parse(input)?;
+
+        let iter = Iter {
+            parser: &self.parser,
+            input,
+            first: Some(first),
+        };
+
+        (self.f)(iter)
     }
 }
 
 impl<P, F, I, O> ParserMut<I> for Many1<P, F>
 where
-    P: ParserMut<I>,
+    P: Parser<I>,
     F: FnMut(Iter<'_, P, I>) -> Option<O>,
 {
     fn parse_mut(&mut self, input: &mut I) -> Option<Self::Output> {

@@ -31,9 +31,8 @@ pub trait ParserOnce<Input>: Sized {
     where
         Input: Stream,
     {
-        let position = input.position();
         let output = self.parse_once(input);
-        (output, input.position() != position)
+        (output, input.is_empty())
     }
 
     fn parse_partial(self, mut input: Input) -> Option<Self::Output> {
@@ -44,7 +43,7 @@ pub trait ParserOnce<Input>: Sized {
     where
         Input: Stream,
     {
-        chain((self, eof()))
+        self.followed_by(eof())
             .map_once(|(o, ())| o)
             .parse_partial(input)
     }
@@ -151,6 +150,14 @@ pub trait ParserMut<Input>: ParserOnce<Input> {
         and_then::and_then(self, f)
     }
 
+    // TODO: merge with `many_mut`, again see https://github.com/rust-lang/rust/issues/26085
+    fn many_once<F, O>(self, f: F) -> many::ManyMut<Self, F>
+    where
+        F: FnOnce(many::IterMut<'_, Self, Input>) -> Option<O>,
+    {
+        many::many_mut(self, f)
+    }
+
     // TODO: maybe somehow combine this with `Parser::many`
     fn many_mut<F, O>(self, f: F) -> many::ManyMut<Self, F>
     where
@@ -163,15 +170,25 @@ pub trait ParserMut<Input>: ParserOnce<Input> {
         many::iter(self, input)
     }
 
+    // TODO: this can be implemented in terms of `many_mut`
     fn skip_many(self) -> many::SkipMany<Self> {
         many::skip_many(self)
     }
 
+    // TODO: this can be implemented in terms of `many_mut`
     fn collect_many<I>(self) -> many::CollectMany<Self, I>
     where
         I: FromIterator<Self::Output>,
     {
         many::collect_many(self)
+    }
+
+    // TODO: merge with many1_mut
+    fn many1_once<F, O>(self, f: F) -> many1::Many1Mut<Self, F>
+    where
+        F: FnOnce(many1::IterMut<'_, Self, Input>) -> Option<O>,
+    {
+        many1::many1_mut(self, f)
     }
 
     // TODO: maybe somehow combine this with `Parser::many1`
@@ -191,6 +208,15 @@ pub trait ParserMut<Input>: ParserOnce<Input> {
         I: FromIterator<Self::Output>,
     {
         many1::collect_many1(self)
+    }
+
+    // TODO: merge with `sep_by_mut`
+    fn sep_by_once<P, F, O>(self, separator: P, f: F) -> sep_by::SepByMut<Self, P, F>
+    where
+        P: ParserMut<Input>,
+        F: FnOnce(sep_by::IterMut<'_, Self, P, Input>) -> Option<O>,
+    {
+        sep_by::sep_by_mut(self, separator, f)
     }
 
     // TODO: maybe somehow combine this with `Parser::sep_by`
@@ -250,7 +276,7 @@ pub trait Parser<Input>: ParserMut<Input> {
 
     fn flat_map<P, F>(self, f: F) -> flat_map::FlatMap<Self, F>
     where
-        P: Parser<Input>,
+        P: ParserOnce<Input>,
         F: Fn(Self::Output) -> P,
     {
         flat_map::flat_map(self, f)
